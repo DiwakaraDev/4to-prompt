@@ -19,11 +19,17 @@ export function usePrompts(options: UsePromptsOptions = {}) {
   const [error,    setError]    = useState<string | null>(null);
   const [initiated, setInitiated] = useState(false);
 
+  const toType = (fp?: boolean) =>
+    fp === true ? "PREMIUM" : fp === false ? "FREE" : "ALL";
+
   const loadInitial = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchPrompts(null, options.filterPremium, options.category);
+      const result = await fetchPrompts({
+        type:     toType(options.filterPremium),
+        category: options.category,
+      });
       setPrompts(result.data);
       setLastDoc(result.lastDoc as QueryDocumentSnapshot | null);
       setHasMore(result.hasMore);
@@ -39,7 +45,11 @@ export function usePrompts(options: UsePromptsOptions = {}) {
     if (!hasMore || loading || !lastDoc) return;
     setLoading(true);
     try {
-      const result = await fetchPrompts(lastDoc, options.filterPremium, options.category);
+      const result = await fetchPrompts({
+        lastDoc:  lastDoc,
+        type:     toType(options.filterPremium),
+        category: options.category,
+      });
       setPrompts(prev => [...prev, ...result.data]);
       setLastDoc(result.lastDoc as QueryDocumentSnapshot | null);
       setHasMore(result.hasMore);

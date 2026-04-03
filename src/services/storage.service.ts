@@ -1,5 +1,5 @@
 // src/services/storage.service.ts
-// ✅ Cloudinary only — zero Firebase Storage imports
+// ✅ Cloudinary only — NO firebase/storage imports
 
 export async function uploadPromptImage(
   file: File,
@@ -10,7 +10,8 @@ export async function uploadPromptImage(
 
   if (!cloudName || !uploadPreset) {
     throw new Error(
-      "Missing NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME or NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in .env.local"
+      "Missing NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME or " +
+      "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in .env.local"
     );
   }
 
@@ -42,16 +43,22 @@ export async function uploadPromptImage(
       }
     });
 
-    xhr.addEventListener("error",  () => reject(new Error("Network error. Check your connection.")));
-    xhr.addEventListener("abort",  () => reject(new Error("Upload cancelled.")));
+    xhr.addEventListener("error", () =>
+      reject(new Error("Network error. Check your connection."))
+    );
+    xhr.addEventListener("abort", () =>
+      reject(new Error("Upload cancelled."))
+    );
 
-    xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
+    xhr.open(
+      "POST",
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    );
     xhr.send(formData);
   });
 }
 
 export async function deleteStorageFile(_imageUrl: string): Promise<void> {
-  // Cloudinary deletion requires server-side signed request.
-  // Images remain in Cloudinary but are unlinked from Firestore.
-  // Implement via API route if needed later.
+  // No-op: Cloudinary deletion needs server-side signing
+  // Images remain in Cloudinary but unlinked from Firestore
 }
