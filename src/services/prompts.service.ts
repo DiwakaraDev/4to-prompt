@@ -83,6 +83,14 @@ export async function fetchPrompts(
 ): Promise<PaginationResult<Prompt>> {
   const { lastDoc, type = "ALL", category = "All" } = options;
 
+  const isIndexError = (err: unknown) => {
+    if (!err || typeof err !== "object") return false;
+    const maybeErr = err as { code?: string; message?: string };
+    const code = typeof maybeErr.code === "string" ? maybeErr.code : "";
+    const message = typeof maybeErr.message === "string" ? maybeErr.message : "";
+    return code === "failed-precondition" || message.toLowerCase().includes("index");
+  };
+
   // Build constraint array dynamically
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const constraints: any[] = [];
@@ -91,23 +99,41 @@ export async function fetchPrompts(
   if (type === "PREMIUM") constraints.push(where("isPremium", "==", true));
   if (category !== "All") constraints.push(where("category", "==", category));
 
-  constraints.push(orderBy("createdAt", "desc"));
-  if (lastDoc) constraints.push(startAfter(lastDoc));
+  const orderedConstraints = [...constraints, orderBy("createdAt", "desc")];
+  if (lastDoc) orderedConstraints.push(startAfter(lastDoc));
 
   // Fetch one extra to determine hasMore
-  constraints.push(limit(PAGE_SIZE + 1));
+  orderedConstraints.push(limit(PAGE_SIZE + 1));
 
-  const snap = await getDocs(query(collection(db, COL), ...constraints));
-  const docs = snap.docs;
+  try {
+    const snap = await getDocs(query(collection(db, COL), ...orderedConstraints));
+    const docs = snap.docs;
 
-  const hasMore = docs.length > PAGE_SIZE;
-  const data    = docs.slice(0, PAGE_SIZE).map(docToPrompt);
+    const hasMore = docs.length > PAGE_SIZE;
+    const data    = docs.slice(0, PAGE_SIZE).map(docToPrompt);
 
-  return {
-    data,
-    lastDoc:  hasMore ? docs[PAGE_SIZE - 1] : null,
-    hasMore,
-  };
+    return {
+      data,
+      lastDoc:  hasMore ? docs[PAGE_SIZE - 1] : null,
+      hasMore,
+    };
+  } catch (err) {
+    if (!isIndexError(err)) throw err;
+
+    // Fallback when composite index is missing: drop orderBy/startAfter.
+    // Pagination is disabled in this mode.
+    console.warn("Missing Firestore index for prompts query; using fallback.");
+
+    const fallbackConstraints = [...constraints, limit(PAGE_SIZE)];
+    const snap = await getDocs(query(collection(db, COL), ...fallbackConstraints));
+    const data = snap.docs.map(docToPrompt);
+
+    return {
+      data,
+      lastDoc: null,
+      hasMore: false,
+    };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
