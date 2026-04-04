@@ -596,6 +596,12 @@ button { cursor: pointer; background: none; border: none; }
   outline: none;
 }
 .input::placeholder { color: var(--color-text-faint); }
+.input.pl-11 { padding-left: 2.75rem; }
+.input.pl-10 { padding-left: 2.5rem; }
+.input.pl-9  { padding-left: 2.25rem; }
+.input.pr-12 { padding-right: 3rem; }
+.input.pr-10 { padding-right: 2.5rem; }
+.input.pr-4  { padding-right: 1rem; }
 .input:hover {
   border-color: rgba(255,255,255,0.13);
   background: var(--color-surface-3);

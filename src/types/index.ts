@@ -34,10 +34,16 @@ export interface Prompt {
   promptText: string;
   category: PromptCategory;
   isPremium: boolean;
-  createdBy: string;        // uid
+  createdBy: string; // uid
   createdByName: string;
   createdAt: Timestamp;
   likesCount: number;
+}
+
+// ─── Like ───────────────────────────────────────────────────────
+export interface Like {
+  userId: string;
+  createdAt: Timestamp;
 }
 
 // ─── Comment ────────────────────────────────────────────────────
@@ -49,6 +55,14 @@ export interface Comment {
   userPhotoURL?: string;
   text: string;
   createdAt: Timestamp;
+  likes: number; // comment-level likes
+}
+
+// ─── Share Options ──────────────────────────────────────────────
+export interface ShareOption {
+  label: string;
+  icon: string;
+  url: string;
 }
 
 // ─── Auth Store ─────────────────────────────────────────────────
@@ -62,6 +76,6 @@ export interface AuthState {
 // ─── Pagination ─────────────────────────────────────────────────
 export interface PaginationResult<T> {
   data: T[];
-  lastDoc: unknown;       // DocumentSnapshot
+  lastDoc: unknown; // DocumentSnapshot
   hasMore: boolean;
 }

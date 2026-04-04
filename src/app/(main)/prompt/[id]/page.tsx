@@ -4,9 +4,14 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { fetchPromptById, likePrompt, unlikePrompt, hasUserLikedPrompt } from "@/services/prompts.service";
+import {
+  fetchPromptById,
+  likePrompt,
+  unlikePrompt,
+  hasUserLikedPrompt,
+} from "@/services/prompts.service";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDate, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -24,14 +29,20 @@ import {
   RiImageLine,
   RiLockLine,
   RiShieldUserLine,
+  RiShareForwardLine,
 } from "react-icons/ri";
+import { FiLink } from "react-icons/fi";
+import { FaWhatsapp, FaTwitter, FaFacebookF } from "react-icons/fa";
 
-// ── Dynamically import the heavy comments section ───────────────
+// ───────────────────────────────────────────────────────────────
+// Dynamic import of comments section
+// ───────────────────────────────────────────────────────────────
+
 const CommentSection = dynamic(
   () =>
-    import("@/components/comments/CommentSection").then(
-      (m) => ({ default: m.CommentSection })
-    ),
+    import("@/components/comments/CommentSection").then((m) => ({
+      default: m.CommentSection,
+    })),
   {
     loading: () => (
       <div className="glass rounded-2xl p-6">
@@ -67,53 +78,82 @@ const CommentSection = dynamic(
   }
 );
 
-// ─────────────────────────────────────────────────────────────────
-// Skeleton — shown while prompt is loading
-// ─────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Skeleton while loading
+// ───────────────────────────────────────────────────────────────
 
 function PromptDetailSkeleton() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-6">
-      {/* Back button skeleton */}
-      <div className="skeleton rounded-xl" style={{ height: "32px", width: "100px" }} />
+      <div
+        className="skeleton rounded-xl"
+        style={{ height: "32px", width: "100px" }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
-        {/* Image skeleton */}
         <div
           className="skeleton rounded-2xl"
           style={{ aspectRatio: "4/3", width: "100%" }}
         />
-
-        {/* Right panel skeleton */}
         <div className="flex flex-col gap-4">
           <div className="glass rounded-2xl p-5 flex flex-col gap-3">
-            <div className="skeleton rounded" style={{ height: "14px", width: "40%" }} />
-            <div className="skeleton rounded" style={{ height: "28px", width: "75%" }} />
+            <div
+              className="skeleton rounded"
+              style={{ height: "14px", width: "40%" }}
+            />
+            <div
+              className="skeleton rounded"
+              style={{ height: "28px", width: "75%" }}
+            />
             <div className="flex gap-2">
-              <div className="skeleton rounded-full" style={{ height: "22px", width: "70px" }} />
-              <div className="skeleton rounded-full" style={{ height: "22px", width: "60px" }} />
+              <div
+                className="skeleton rounded-full"
+                style={{ height: "22px", width: "70px" }}
+              />
+              <div
+                className="skeleton rounded-full"
+                style={{ height: "22px", width: "60px" }}
+              />
             </div>
             <div
               className="skeleton rounded-xl"
               style={{ height: "1px", width: "100%", marginBlock: "4px" }}
             />
             {[1, 2, 3].map((i) => (
-              <div key={i} className="skeleton rounded" style={{ height: "11px", width: i === 3 ? "50%" : "90%" }} />
+              <div
+                key={i}
+                className="skeleton rounded"
+                style={{
+                  height: "11px",
+                  width: i === 3 ? "50%" : "90%",
+                }}
+              />
             ))}
           </div>
           <div className="skeleton rounded-2xl" style={{ height: "52px" }} />
         </div>
       </div>
 
-      {/* Comments skeleton */}
       <div className="glass rounded-2xl p-6">
-        <div className="skeleton rounded" style={{ height: "11px", width: "120px", marginBottom: "16px" }} />
+        <div
+          className="skeleton rounded"
+          style={{ height: "11px", width: "120px", marginBottom: "16px" }}
+        />
         {[1, 2].map((i) => (
           <div key={i} className="flex gap-3 mb-4">
-            <div className="skeleton rounded-lg shrink-0" style={{ width: "28px", height: "28px" }} />
+            <div
+              className="skeleton rounded-lg shrink-0"
+              style={{ width: "28px", height: "28px" }}
+            />
             <div className="flex-1 flex flex-col gap-2">
-              <div className="skeleton rounded" style={{ height: "10px", width: "25%" }} />
-              <div className="skeleton rounded" style={{ height: "12px", width: "70%" }} />
+              <div
+                className="skeleton rounded"
+                style={{ height: "10px", width: "25%" }}
+              />
+              <div
+                className="skeleton rounded"
+                style={{ height: "12px", width: "70%" }}
+              />
             </div>
           </div>
         ))}
@@ -122,9 +162,9 @@ function PromptDetailSkeleton() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Premium Lock Overlay
-// ─────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Premium lock overlay
+// ───────────────────────────────────────────────────────────────
 
 function PremiumLock() {
   return (
@@ -137,7 +177,6 @@ function PremiumLock() {
         WebkitBackdropFilter: "blur(12px)",
       }}
     >
-      {/* Crown icon */}
       <div
         className="w-14 h-14 rounded-2xl flex items-center justify-center animate-fadeInUp"
         style={{
@@ -159,7 +198,10 @@ function PremiumLock() {
         >
           Premium Prompt
         </p>
-        <p className="text-xs max-w-[200px]" style={{ color: "var(--color-text-muted)" }}>
+        <p
+          className="text-xs max-w-[200px]"
+          style={{ color: "var(--color-text-muted)" }}
+        >
           Unlock this prompt to see the full text
         </p>
       </div>
@@ -183,21 +225,33 @@ function PremiumLock() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Copy Prompt Button
-// ─────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Copy button
+// ───────────────────────────────────────────────────────────────
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, isLocked }: { text: string; isLocked: boolean }) {
+  const { user } = useAuth();
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
+    if (!user) {
+      toast.error("Sign in to copy prompts");
+      router.push("/login");
+      return;
+    }
+
+    if (isLocked) {
+      toast.error("Unlock premium to copy this prompt");
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       toast.success("Prompt copied to clipboard!");
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      // Fallback for older browsers
       const el = document.createElement("textarea");
       el.value = text;
       el.style.position = "absolute";
@@ -237,26 +291,29 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Like Button
-// ─────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Like button (your existing logic)
+// ───────────────────────────────────────────────────────────────
 
 function LikeButton({
   promptId,
   initialCount,
 }: {
-  promptId:     string;
+  promptId: string;
   initialCount: number;
 }) {
-  const { user }         = useAuth();
-  const [liked,   setLiked]   = useState(false);
-  const [count,   setCount]   = useState(initialCount);
+  const { user } = useAuth();
+  const router = useRouter();
+  const [liked, setLiked] = useState(false);
+  const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
   const [checked, setChecked] = useState(false);
 
-  // Check initial like state
   useEffect(() => {
-    if (!user) { setChecked(true); return; }
+    if (!user) {
+      setChecked(true);
+      return;
+    }
     hasUserLikedPrompt(promptId, user.uid)
       .then(setLiked)
       .finally(() => setChecked(true));
@@ -265,11 +322,12 @@ function LikeButton({
   async function handleToggle() {
     if (!user) {
       toast.error("Sign in to like prompts.");
+      router.push("/login");
       return;
     }
     if (loading) return;
-    setLoading(true);
 
+    setLoading(true);
     try {
       if (liked) {
         await unlikePrompt(promptId, user.uid);
@@ -321,27 +379,234 @@ function LikeButton({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Main Page Component
-// ─────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Share button (Facebook-style share menu)
+// ───────────────────────────────────────────────────────────────
+
+function ShareButton({
+  promptId,
+  title,
+  text,
+}: {
+  promptId: string;
+  title: string;
+  text: string;
+}) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/prompt/${promptId}`
+      : "";
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  async function handleNativeShare() {
+    if (!user) {
+      toast.error("Sign in to share prompts.");
+      router.push("/login");
+      return;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: text.slice(0, 100),
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // fall back to menu
+      }
+    }
+    setOpen((v) => !v);
+  }
+
+  async function handleCopy() {
+    if (!user) {
+      toast.error("Sign in to share prompts.");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Link copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  }
+
+  function handleWhatsApp() {
+    if (!user) {
+      toast.error("Sign in to share prompts.");
+      router.push("/login");
+      return;
+    }
+
+    const msg = encodeURIComponent(
+      `${title}\n\nCheck this AI prompt 👇\n${shareUrl}`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank", "noopener");
+  }
+
+  function handleTwitter() {
+    if (!user) {
+      toast.error("Sign in to share prompts.");
+      router.push("/login");
+      return;
+    }
+
+    const msg = encodeURIComponent(
+      `${title} — ${text.slice(0, 80)}...`
+    );
+    const url = encodeURIComponent(shareUrl);
+    const tags = encodeURIComponent("AIArt,MidJourney,AIPrompt");
+    window.open(
+      `https://twitter.com/intent/tweet?text=${msg}&url=${url}&hashtags=${tags}`,
+      "_blank",
+      "noopener"
+    );
+  }
+
+  function handleFacebook() {
+    if (!user) {
+      toast.error("Sign in to share prompts.");
+      router.push("/login");
+      return;
+    }
+
+    const url = encodeURIComponent(shareUrl);
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      "_blank",
+      "noopener"
+    );
+  }
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={handleNativeShare}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold",
+          "transition-all duration-200 border border-[rgba(255,255,255,0.08)]",
+          "bg-[rgba(17,19,29,0.85)] hover:bg-[rgba(30,32,48,0.95)]",
+          "text-[var(--color-text-muted)] hover:text-[#00f2ff]"
+        )}
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <RiShareForwardLine size={16} />
+        Share
+      </button>
+
+      {open && (
+        <div
+          className={cn(
+            "absolute z-30 mt-2 w-56 right-0",
+            "rounded-2xl border border-[rgba(255,255,255,0.10)]",
+            "bg-[rgba(14,16,26,0.98)] shadow-2xl backdrop-blur-xl"
+          )}
+        >
+          <div className="px-3 py-2 text-xs text-[var(--color-text-faint)]">
+            Share this prompt
+          </div>
+          <div className="flex flex-col px-1 pb-2">
+            <ShareOption
+              icon={
+                copied ? (
+                  <RiCheckLine className="text-emerald-400" size={14} />
+                ) : (
+                  <FiLink size={14} />
+                )
+              }
+              label={copied ? "Link copied" : "Copy link"}
+              onClick={handleCopy}
+            />
+            <ShareOption
+              icon={<FaWhatsapp className="text-emerald-400" size={14} />}
+              label="WhatsApp"
+              onClick={handleWhatsApp}
+            />
+            <ShareOption
+              icon={<FaTwitter className="text-sky-400" size={14} />}
+              label="Twitter / X"
+              onClick={handleTwitter}
+            />
+            <ShareOption
+              icon={<FaFacebookF className="text-blue-500" size={14} />}
+              label="Facebook"
+              onClick={handleFacebook}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShareOption({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--color-text)]",
+        "hover:bg-[rgba(255,255,255,0.04)] transition-colors duration-150"
+      )}
+    >
+      <span className="w-4 h-4 flex items-center justify-center">{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────
+// Main page
+// ───────────────────────────────────────────────────────────────
 
 export default function PromptDetailPage() {
-  const params          = useParams();
-  const router          = useRouter();
-  const { user }        = useAuth();
-  const id              = params?.id as string;
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
+  const id = params?.id as string;
 
-  const [prompt,  setPrompt]  = useState<Prompt | null>(null);
+  const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // ── Fetch prompt ──────────────────────────────────────────────
   const loadPrompt = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
       const data = await fetchPromptById(id);
-      if (!data) { setNotFound(true); return; }
+      if (!data) {
+        setNotFound(true);
+        return;
+      }
       setPrompt(data);
     } catch {
       setNotFound(true);
@@ -354,15 +619,13 @@ export default function PromptDetailPage() {
     loadPrompt();
   }, [loadPrompt]);
 
-  // ── Derived state ─────────────────────────────────────────────
-  const isAdmin     = user?.role === "admin";
-  const isPremium   = prompt?.isPremium ?? false;
-  const canViewFull = !isPremium || isAdmin; // Extend this when payment is added
+  const isAdmin = user?.role === "admin";
+  const isPremium = prompt?.isPremium ?? false;
+  const canViewFull = !isPremium || isAdmin;
+  const isLocked = isPremium && !isAdmin;
 
-  // ── Loading state ─────────────────────────────────────────────
   if (loading) return <PromptDetailSkeleton />;
 
-  // ── Not found ─────────────────────────────────────────────────
   if (notFound || !prompt) {
     return (
       <div
@@ -397,15 +660,14 @@ export default function PromptDetailPage() {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────
   return (
     <div
       className="min-h-dvh"
-      style={{ background: "var(--color-bg)", paddingBottom: "var(--space-16)" }}
+      style={{
+        background: "var(--color-bg)",
+        paddingBottom: "var(--space-16)",
+      }}
     >
-      {/* Ambient background gradient */}
       <div
         aria-hidden="true"
         className="fixed inset-0 -z-10 pointer-events-none"
@@ -420,8 +682,6 @@ export default function PromptDetailPage() {
       />
 
       <div className="max-w-5xl mx-auto px-4 py-7 flex flex-col gap-6">
-
-        {/* ── Back navigation ────────────────────────────────── */}
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm font-medium w-fit
@@ -435,10 +695,8 @@ export default function PromptDetailPage() {
           Back
         </button>
 
-        {/* ── Main grid ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 items-start">
-
-          {/* ── LEFT: Image ────────────────────────────────── */}
+          {/* LEFT: image */}
           <div className="flex flex-col gap-4">
             <div
               className="relative rounded-2xl overflow-hidden group/image"
@@ -449,7 +707,6 @@ export default function PromptDetailPage() {
                 boxShadow: "0 24px 64px rgba(0,0,0,0.40)",
               }}
             >
-              {/* Actual image */}
               <Image
                 src={prompt.imageUrl}
                 alt={prompt.title}
@@ -459,19 +716,19 @@ export default function PromptDetailPage() {
                 className="object-cover"
               />
 
-              {/* Premium blur + lock overlay */}
               {isPremium && !canViewFull && (
                 <>
-                  {/* Blur the image */}
                   <div
                     className="absolute inset-0 z-[5]"
-                    style={{ backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
+                    style={{
+                      backdropFilter: "blur(18px)",
+                      WebkitBackdropFilter: "blur(18px)",
+                    }}
                   />
                   <PremiumLock />
                 </>
               )}
 
-              {/* Premium badge (top-left) — visible to everyone */}
               {isPremium && (
                 <div className="absolute top-3 left-3 z-20">
                   <span
@@ -488,7 +745,6 @@ export default function PromptDetailPage() {
                 </div>
               )}
 
-              {/* Admin badge (top-right) */}
               {isAdmin && isPremium && (
                 <div className="absolute top-3 right-3 z-20">
                   <span
@@ -508,14 +764,9 @@ export default function PromptDetailPage() {
             </div>
           </div>
 
-          {/* ── RIGHT: Details panel ───────────────────────── */}
+          {/* RIGHT: details */}
           <div className="flex flex-col gap-4">
-
-            {/* Info card */}
-            <div
-              className="glass rounded-2xl p-5 flex flex-col gap-4 animate-fadeInUp"
-            >
-              {/* Category + type row */}
+            <div className="glass rounded-2xl p-5 flex flex-col gap-4 animate-fadeInUp">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="badge badge-primary">
                   <RiPriceTag3Line size={10} />
@@ -534,7 +785,6 @@ export default function PromptDetailPage() {
                 )}
               </div>
 
-              {/* Title */}
               <h1
                 style={{
                   fontFamily: "var(--font-display)",
@@ -548,7 +798,6 @@ export default function PromptDetailPage() {
                 {prompt.title}
               </h1>
 
-              {/* Meta row */}
               <div className="flex flex-col gap-1.5">
                 <div
                   className="flex items-center gap-2 text-xs"
@@ -557,7 +806,12 @@ export default function PromptDetailPage() {
                   <RiUserLine size={12} />
                   <span>
                     By{" "}
-                    <span style={{ color: "var(--color-text-muted)", fontWeight: 600 }}>
+                    <span
+                      style={{
+                        color: "var(--color-text-muted)",
+                        fontWeight: 600,
+                      }}
+                    >
                       {prompt.createdByName}
                     </span>
                   </span>
@@ -573,7 +827,6 @@ export default function PromptDetailPage() {
                 )}
               </div>
 
-              {/* Divider */}
               <div
                 style={{
                   height: "1px",
@@ -581,7 +834,6 @@ export default function PromptDetailPage() {
                 }}
               />
 
-              {/* Prompt text box */}
               <div>
                 <div
                   className="text-xs font-bold uppercase tracking-widest mb-2"
@@ -591,7 +843,6 @@ export default function PromptDetailPage() {
                 </div>
 
                 {canViewFull ? (
-                  /* ── Full prompt text (free or admin) ─────── */
                   <div
                     className="relative rounded-xl p-4 font-mono text-sm leading-relaxed
                                select-all cursor-text"
@@ -613,9 +864,7 @@ export default function PromptDetailPage() {
                     {prompt.promptText}
                   </div>
                 ) : (
-                  /* ── Locked prompt text (premium, not logged-in) ── */
                   <div className="relative rounded-xl overflow-hidden">
-                    {/* Blurred preview */}
                     <div
                       className="p-4 font-mono text-sm leading-relaxed select-none"
                       style={{
@@ -630,12 +879,15 @@ export default function PromptDetailPage() {
                       }}
                       aria-hidden="true"
                     >
-                      {/* Show garbled text as placeholder */}
-                      {prompt.promptText.slice(0, 80).replace(/\S/g, "•")}{" "}
-                      {prompt.promptText.slice(80, 180).replace(/\S/g, "◦")}…
+                      {prompt.promptText
+                        .slice(0, 80)
+                        .replace(/\S/g, "•")}{" "}
+                      {prompt.promptText
+                        .slice(80, 180)
+                        .replace(/\S/g, "◦")}
+                      …
                     </div>
 
-                    {/* Lock overlay */}
                     <div
                       className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl"
                       style={{
@@ -659,37 +911,25 @@ export default function PromptDetailPage() {
               </div>
             </div>
 
-            {/* ── Action buttons ─────────────────────────── */}
+            {/* ACTION BAR: Copy + Like + Share */}
             <div className="flex flex-col gap-2.5 animate-fadeInUp stagger-1">
-              {canViewFull ? (
-                <CopyButton text={prompt.promptText} />
-              ) : (
-                <Link
-                  href="/login"
-                  className="btn w-full justify-center font-semibold"
-                  style={{
-                    background: "linear-gradient(135deg, #f5c842, #e0a800)",
-                    color: "#1a1200",
-                    minHeight: "44px",
-                    borderRadius: "var(--radius-xl)",
-                  }}
-                >
-                  <RiVipCrownLine size={16} />
-                  Unlock Premium to Copy
-                </Link>
-              )}
+              <CopyButton text={prompt.promptText} isLocked={isLocked} />
 
-              <LikeButton
-                promptId={prompt.id}
-                initialCount={prompt.likesCount ?? 0}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <LikeButton
+                  promptId={prompt.id}
+                  initialCount={prompt.likesCount ?? 0}
+                />
+                <ShareButton
+                  promptId={prompt.id}
+                  title={prompt.title}
+                  text={prompt.promptText}
+                />
+              </div>
             </div>
 
-            {/* ── Admin quick actions ─────────────────────── */}
             {isAdmin && (
-              <div
-                className="glass rounded-2xl p-4 flex flex-col gap-2.5 animate-fadeInUp stagger-2"
-              >
+              <div className="glass rounded-2xl p-4 flex flex-col gap-2.5 animate-fadeInUp stagger-2">
                 <div
                   className="text-xs font-bold uppercase tracking-widest"
                   style={{ color: "var(--color-text-faint)" }}
@@ -712,15 +952,13 @@ export default function PromptDetailPage() {
                 </div>
               </div>
             )}
-
           </div>
         </div>
 
-        {/* ── Comments section (dynamically loaded) ──────────── */}
+        {/* COMMENTS */}
         <div className="animate-fadeInUp stagger-3">
           <CommentSection promptId={prompt.id} />
         </div>
-
       </div>
     </div>
   );

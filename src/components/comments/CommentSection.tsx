@@ -1,178 +1,227 @@
 // src/components/comments/CommentSection.tsx
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { addComment, deleteComment } from "@/services/comments.service";
-import { useComments } from "@/hooks/useComments";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDate, cn } from "@/lib/utils";
-import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import {
-  RiSendPlane2Line, RiDeleteBinLine, RiUserLine,
-} from "react-icons/ri";
+  subscribeToComments,
+  postComment,
+  deleteComment,
+} from "@/services/comments.service";
+import type { Comment } from "@/types";
+import { cn } from "@/lib/utils";
+import { RiDeleteBin6Line, RiSendPlane2Line } from "react-icons/ri";
+import toast from "react-hot-toast";
 
 interface CommentSectionProps {
   promptId: string;
 }
 
 export function CommentSection({ promptId }: CommentSectionProps) {
-  const { user }    = useAuth();
-  const { comments, loading } = useComments(promptId);
-  const [text,       setText]      = useState("");
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [deleting,   setDeleting]  = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!promptId) return;
+
+    const unsub = subscribeToComments(
+      promptId,
+      (data: Comment[]) => {
+        setComments(data);
+        setLoading(false);
+      },
+      () => {
+        setLoading(false);
+        toast.error("Failed to load comments");
+      }
+    );
+
+    return () => unsub();
+  }, [promptId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim() || !user) return;
+    if (!user) {
+      toast.error("Sign in to comment");
+      router.push("/login");
+      return;
+    }
+    if (!input.trim()) return;
+    if (submitting) return;
+
     setSubmitting(true);
     try {
-      await addComment({
+      await postComment({
         promptId,
-        userId:       user.uid,
-        userName:     user.name,
+        userId: user.uid,
+        userName: user.name,
         userPhotoURL: user.photoURL,
-        text:         text.trim(),
+        text: input.trim(),
       });
-      setText("");
+      setInput("");
     } catch {
-      toast.error("Failed to post comment.");
+      toast.error("Failed to post comment");
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleDelete(id: string) {
-    setDeleting(id);
+  async function handleDelete(comment: Comment) {
+    if (!user) return;
+
+    const isOwner = comment.userId === user.uid;
+    const isAdmin = user.role === "admin";
+    if (!isOwner && !isAdmin) {
+      toast.error("You can only delete your own comments");
+      return;
+    }
+
     try {
-      await deleteComment(id);
-      toast.success("Comment deleted.");
+      await deleteComment(comment.id);
+      toast.success("Comment deleted");
     } catch {
-      toast.error("Failed to delete.");
-    } finally {
-      setDeleting(null);
+      toast.error("Failed to delete comment");
     }
   }
 
   return (
-    <div className="glass rounded-2xl overflow-hidden">
-      <div className="px-5 py-3.5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <h2 className="text-xs font-bold uppercase tracking-widest"
-          style={{ color: "var(--color-text-muted)" }}>
-          Comments ({comments.length})
-        </h2>
+    <section
+      aria-label="Comments"
+      className="glass rounded-2xl p-5 flex flex-col gap-4"
+    >
+      <div
+        className="text-xs font-bold uppercase tracking-widest"
+        style={{ color: "var(--color-text-faint)" }}
+      >
+        Comments ({comments.length})
       </div>
 
-      <div className="p-5 flex flex-col gap-5">
-        {/* Input */}
-        {user ? (
-          <form onSubmit={handleSubmit} className="flex gap-2.5 items-start">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0
-                            text-xs font-bold"
-              style={{ background: "var(--color-primary-muted)", color: "var(--color-primary)" }}>
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 flex gap-2">
-              <input
-                type="text"
-                value={text}
-                onChange={e => setText(e.target.value)}
-                placeholder="Add a comment…"
-                maxLength={500}
-                className="input flex-1"
-                aria-label="Write a comment"
-              />
-              <button type="submit"
-                disabled={!text.trim() || submitting}
-                className="btn btn-primary btn-sm shrink-0"
-                aria-label="Post comment">
-                {submitting
-                  ? <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white
-                                     rounded-full animate-spin" />
-                  : <RiSendPlane2Line size={14} />}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="text-center py-3">
-            <p className="text-sm mb-2.5" style={{ color: "var(--color-text-muted)" }}>
-              Sign in to leave a comment
-            </p>
-            <Link href="/login" className="btn btn-secondary btn-sm">Sign In</Link>
-          </div>
-        )}
+      {/* input */}
+      <form
+        onSubmit={handleSubmit}
+        onClick={() => {
+          if (!user) {
+            toast.error("Sign in to comment");
+            router.push("/login");
+          }
+        }}
+        className="flex items-center gap-2"
+      >
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={
+            user ? "Write a comment…" : "Sign in to join the comment section"
+          }
+          disabled={!user || submitting}
+          className={cn(
+            "flex-1 rounded-xl px-3 py-2.5 text-xs bg-[rgba(8,10,18,0.9)]",
+            "border border-white/10 outline-none",
+            "placeholder:text-text-faint",
+            "focus:border-primary"
+          )}
+          style={{ color: "var(--color-text)" }}
+        />
+        <button
+          type="submit"
+          disabled={!user || submitting || !input.trim()}
+          className={cn(
+            "inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-xs font-semibold",
+            "border border-[rgba(188,103,255,0.35)] bg-primary-muted",
+            "text-primary transition-opacity",
+            (!user || submitting || !input.trim()) && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <RiSendPlane2Line size={14} />
+        </button>
+      </form>
 
-        {/* List */}
+      {/* list */}
+      <div className="flex flex-col gap-3">
         {loading ? (
-          <div className="flex flex-col gap-3">
-            {[1,2,3].map(i => (
-              <div key={i} className="flex gap-3">
-                <div className="skeleton skeleton-avatar" />
-                <div className="flex-1 flex flex-col gap-1.5">
-                  <div className="skeleton" style={{ height: "11px", width: "30%" }} />
-                  <div className="skeleton skeleton-text" />
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-3 animate-pulse">
+                <div
+                  className="skeleton rounded-lg shrink-0"
+                  style={{ width: "28px", height: "28px" }}
+                />
+                <div className="flex-1 flex flex-col gap-2">
+                  <div
+                    className="skeleton rounded"
+                    style={{ height: "10px", width: "28%" }}
+                  />
+                  <div
+                    className="skeleton rounded"
+                    style={{ height: "12px", width: "80%" }}
+                  />
                 </div>
               </div>
             ))}
-          </div>
+          </>
         ) : comments.length === 0 ? (
-          <div className="flex flex-col items-center py-8 text-center">
-            <RiUserLine size={20} style={{ color: "var(--color-text-faint)", marginBottom: "8px" }} />
-            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-              No comments yet. Be the first!
-            </p>
-          </div>
+          <p
+            className="text-xs"
+            style={{ color: "var(--color-text-faint)" }}
+          >
+            No comments yet. Be the first one to share your thoughts.
+          </p>
         ) : (
-          <div className="flex flex-col gap-4">
-            {comments.map(comment => {
-              const canDelete = user?.uid === comment.userId || user?.role === "admin";
-              return (
-                <div key={comment.id}
-                  className="flex gap-3 group/comment animate-fadeIn">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0
-                                  text-xs font-bold"
-                    style={{ background: "var(--color-surface-3)", color: "var(--color-text-muted)" }}>
-                    {comment.userName?.charAt(0)?.toUpperCase() ?? "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold"
-                          style={{ color: "var(--color-text)" }}>
-                          {comment.userName}
-                        </span>
-                        <span className="text-xs" style={{ color: "var(--color-text-faint)" }}>
-                          {comment.createdAt ? formatDate(comment.createdAt) : ""}
-                        </span>
-                      </div>
-                      {canDelete && (
-                        <button
-                          onClick={() => handleDelete(comment.id)}
-                          disabled={deleting === comment.id}
-                          aria-label="Delete comment"
-                          className="opacity-0 group-hover/comment:opacity-100 btn btn-danger btn-sm
-                                     transition-opacity duration-150"
-                          style={{ minHeight: "24px", padding: "2px 8px", fontSize: "11px" }}>
-                          {deleting === comment.id
-                            ? <span className="w-3 h-3 border border-current/30 border-t-current
-                                               rounded-full animate-spin" />
-                            : <RiDeleteBinLine size={11} />}
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-sm leading-relaxed"
-                      style={{ color: "var(--color-text-muted)" }}>
-                      {comment.text}
-                    </p>
-                  </div>
+          comments.map((c) => {
+            const canDelete =
+              user && (c.userId === user.uid || user.role === "admin");
+            return (
+              <div
+                key={c.id}
+                className="flex items-start gap-3 rounded-xl bg-white/2 px-3 py-2.5"
+                style={{ background: "rgba(8,10,18,0.75)" }}
+              >
+                <div
+                  className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+                  style={{
+                    background: "rgba(188,103,255,0.16)",
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  {c.userName?.[0]?.toUpperCase() ?? "U"}
                 </div>
-              );
-            })}
-          </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className="text-[11px] font-semibold"
+                      style={{ color: "var(--color-text)" }}
+                    >
+                      {c.userName}
+                    </span>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c)}
+                        className="text-[10px] text-text-faint hover:text-red-400"
+                      >
+                        <RiDeleteBin6Line size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <p
+                    className="mt-1 text-xs leading-snug"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {c.text}
+                  </p>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
-    </div>
+    </section>
   );
 }
