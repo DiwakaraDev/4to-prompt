@@ -1,11 +1,10 @@
-// src/app/(main)/prompt/[id]/page.tsx
 "use client";
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   fetchPromptById,
   likePrompt,
@@ -13,6 +12,7 @@ import {
   hasUserLikedPrompt,
 } from "@/services/prompts.service";
 import { useAuth } from "@/hooks/useAuth";
+import { usePremium } from "@/hooks/usePremium"; // ✅ ADD THIS
 import { formatDate, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import type { Prompt } from "@/types";
@@ -33,6 +33,7 @@ import {
 } from "react-icons/ri";
 import { FiLink } from "react-icons/fi";
 import { FaWhatsapp, FaTwitter, FaFacebookF } from "react-icons/fa";
+import { PremiumLockModal } from "@/components/prompts/PremiumLockModal";
 
 // ───────────────────────────────────────────────────────────────
 // Dynamic import of comments section
@@ -166,7 +167,7 @@ function PromptDetailSkeleton() {
 // Premium lock overlay
 // ───────────────────────────────────────────────────────────────
 
-function PremiumLock() {
+function PremiumLock({ onUnlock }: { onUnlock: () => void }) {
   return (
     <div
       className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-2xl z-10"
@@ -207,8 +208,8 @@ function PremiumLock() {
       </div>
 
       <div className="flex flex-col gap-2 animate-fadeInUp stagger-2 w-[180px]">
-        <Link
-          href="/login"
+        <button
+          onClick={onUnlock}
           className="btn w-full justify-center text-sm font-semibold"
           style={{
             background: "linear-gradient(135deg, #f5c842, #e0a800)",
@@ -219,7 +220,7 @@ function PremiumLock() {
         >
           <RiVipCrownLine size={14} />
           Unlock Premium
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -292,7 +293,7 @@ function CopyButton({ text, isLocked }: { text: string; isLocked: boolean }) {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Like button (your existing logic)
+// Like button
 // ───────────────────────────────────────────────────────────────
 
 function LikeButton({
@@ -380,7 +381,7 @@ function LikeButton({
 }
 
 // ───────────────────────────────────────────────────────────────
-// Share button (Facebook-style share menu)
+// Share button
 // ───────────────────────────────────────────────────────────────
 
 function ShareButton({
@@ -458,7 +459,6 @@ function ShareButton({
       router.push("/login");
       return;
     }
-
     const msg = encodeURIComponent(
       `${title}\n\nCheck this AI prompt 👇\n${shareUrl}`
     );
@@ -471,10 +471,7 @@ function ShareButton({
       router.push("/login");
       return;
     }
-
-    const msg = encodeURIComponent(
-      `${title} — ${text.slice(0, 80)}...`
-    );
+    const msg = encodeURIComponent(`${title} — ${text.slice(0, 80)}...`);
     const url = encodeURIComponent(shareUrl);
     const tags = encodeURIComponent("AIArt,MidJourney,AIPrompt");
     window.open(
@@ -490,7 +487,6 @@ function ShareButton({
       router.push("/login");
       return;
     }
-
     const url = encodeURIComponent(shareUrl);
     window.open(
       `https://www.facebook.com/sharer/sharer.php?u=${url}`,
@@ -591,12 +587,14 @@ function ShareOption({
 export default function PromptDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const id = params?.id as string;
 
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   const loadPrompt = useCallback(async () => {
     if (!id) return;
@@ -619,10 +617,40 @@ export default function PromptDetailPage() {
     loadPrompt();
   }, [loadPrompt]);
 
-  const isAdmin = user?.role === "admin";
+  // ✅ FIX: use usePremium hook — reads premiumUntil from auth store
+  const { canViewPremium, isAdmin } = usePremium();
   const isPremium = prompt?.isPremium ?? false;
-  const canViewFull = !isPremium || isAdmin;
-  const isLocked = isPremium && !isAdmin;
+  const canViewFull = !isPremium || canViewPremium;   // free prompts always visible; premium unlocked for premium/admin users
+  const isLocked = isPremium && !canViewPremium;       // locked only when prompt is premium AND user can't view
+
+  const shouldAutoOpenUnlock = searchParams.get("unlock") === "premium";
+
+  const handleUnlockPremium = useCallback(() => {
+    if (!isLocked) return;
+
+    if (!user) {
+      const returnTo = `/prompt/${id}?unlock=premium`;
+      router.push(`/login?redirectTo=${encodeURIComponent(returnTo)}`);
+      return;
+    }
+
+    setShowUnlockModal(true);
+  }, [id, isLocked, router, user]);
+
+  const handleUnlockModalClose = useCallback(() => {
+    setShowUnlockModal(false);
+
+    if (shouldAutoOpenUnlock) {
+      router.replace(`/prompt/${id}`);
+    }
+  }, [id, router, shouldAutoOpenUnlock]);
+
+  useEffect(() => {
+    if (!isLocked || !user) return;
+    if (!shouldAutoOpenUnlock) return;
+
+    setShowUnlockModal(true);
+  }, [isLocked, shouldAutoOpenUnlock, user]);
 
   if (loading) return <PromptDetailSkeleton />;
 
@@ -668,6 +696,8 @@ export default function PromptDetailPage() {
         paddingBottom: "var(--space-16)",
       }}
     >
+      {showUnlockModal && <PremiumLockModal onClose={handleUnlockModalClose} />}
+
       <div
         aria-hidden="true"
         className="fixed inset-0 -z-10 pointer-events-none"
@@ -725,7 +755,7 @@ export default function PromptDetailPage() {
                       WebkitBackdropFilter: "blur(18px)",
                     }}
                   />
-                  <PremiumLock />
+                  <PremiumLock onUnlock={handleUnlockPremium} />
                 </>
               )}
 
@@ -887,7 +917,6 @@ export default function PromptDetailPage() {
                         .replace(/\S/g, "◦")}
                       …
                     </div>
-
                     <div
                       className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl"
                       style={{

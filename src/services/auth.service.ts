@@ -9,7 +9,11 @@ import {
   type AuthError,
 } from "firebase/auth";
 import {
-  doc, getDoc, setDoc, serverTimestamp,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import type { AppUser } from "@/types";
@@ -31,7 +35,6 @@ export async function registerWithEmail(
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(cred.user, { displayName: name });
 
-  // Create user document in Firestore
   await setDoc(doc(db, "users", cred.user.uid), {
     uid:       cred.user.uid,
     name,
@@ -50,7 +53,6 @@ export async function loginWithGoogle() {
   const ref  = doc(db, "users", cred.user.uid);
   const snap = await getDoc(ref);
 
-  // Create doc only if first-time sign in
   if (!snap.exists()) {
     await setDoc(ref, {
       uid:       cred.user.uid,
@@ -76,27 +78,58 @@ export async function fetchUserDocument(uid: string): Promise<AppUser | null> {
   return snap.exists() ? (snap.data() as AppUser) : null;
 }
 
-// ─── Auth cookie (used by middleware) ────────────────────────
+// ─── Update profile photo ─────────────────────────────────────
+// Saves Cloudinary URL to both Firestore + Firebase Auth profile.
+// Called after a successful Cloudinary upload.
+export async function updateUserPhotoURL(
+  uid: string,
+  photoURL: string,
+): Promise<void> {
+  // 1. Update Firestore users document
+  await updateDoc(doc(db, "users", uid), { photoURL });
+
+  // 2. Update Firebase Auth profile so auth.currentUser.photoURL stays in sync
+  if (auth.currentUser) {
+    await updateProfile(auth.currentUser, { photoURL });
+  }
+}
+
+// ─── Update display name ──────────────────────────────────────
+// Saves updated name to both Firestore + Firebase Auth profile.
+export async function updateUserName(
+  uid: string,
+  name: string,
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid), { name });
+
+  if (auth.currentUser) {
+    await updateProfile(auth.currentUser, { displayName: name });
+  }
+}
+
+// ─── Auth cookie (used by middleware) ─────────────────────────
 export function setAuthCookie(token: string | null) {
   if (token) {
-    document.cookie = `4to-auth-token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    document.cookie = `4to-auth-token=${token}; path=/; max-age=${
+      60 * 60 * 24 * 7
+    }; SameSite=Lax`;
   } else {
     document.cookie = "4to-auth-token=; path=/; max-age=0";
   }
 }
 
-// ─── Friendly error messages ─────────────────────────────────
+// ─── Friendly error messages ──────────────────────────────────
 export function getAuthErrorMessage(error: AuthError): string {
   const map: Record<string, string> = {
-    "auth/user-not-found":       "No account found with this email.",
-    "auth/wrong-password":       "Incorrect password. Please try again.",
-    "auth/email-already-in-use": "This email is already registered.",
-    "auth/invalid-email":        "Please enter a valid email address.",
-    "auth/weak-password":        "Password must be at least 6 characters.",
-    "auth/too-many-requests":    "Too many attempts. Please try again later.",
-    "auth/popup-closed-by-user": "Sign-in popup was closed.",
+    "auth/user-not-found":         "No account found with this email.",
+    "auth/wrong-password":         "Incorrect password. Please try again.",
+    "auth/email-already-in-use":   "This email is already registered.",
+    "auth/invalid-email":          "Please enter a valid email address.",
+    "auth/weak-password":          "Password must be at least 6 characters.",
+    "auth/too-many-requests":      "Too many attempts. Please try again later.",
+    "auth/popup-closed-by-user":   "Sign-in popup was closed.",
     "auth/network-request-failed": "Network error. Check your connection.",
-    "auth/invalid-credential":   "Invalid credentials. Please try again.",
+    "auth/invalid-credential":     "Invalid credentials. Please try again.",
   };
   return map[error.code] ?? "Something went wrong. Please try again.";
 }

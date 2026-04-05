@@ -1,9 +1,9 @@
 // src/app/(auth)/login/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loginWithEmail, getAuthErrorMessage } from "@/services/auth.service";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { cn } from "@/lib/utils";
@@ -27,10 +27,23 @@ interface FormErrors {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form,     setForm]     = useState<FormState>({ email: "", password: "" });
   const [errors,   setErrors]   = useState<FormErrors>({});
   const [loading,  setLoading]  = useState(false);
   const [showPass, setShowPass] = useState(false);
+
+  const redirectTo = useMemo(() => {
+    const raw = searchParams.get("redirectTo");
+    if (!raw) return "/";
+
+    // Only allow in-app relative redirects.
+    if (raw.startsWith("/") && !raw.startsWith("//")) {
+      return raw;
+    }
+
+    return "/";
+  }, [searchParams]);
 
   // ─── Client-side validation ───────────────────────────────
   function validate(): boolean {
@@ -59,7 +72,7 @@ export default function LoginPage() {
     try {
       await loginWithEmail(form.email, form.password);
       toast.success("Welcome back!");
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       const msg = getAuthErrorMessage(err as AuthError);
@@ -102,7 +115,7 @@ export default function LoginPage() {
           </div>
 
           {/* Google button */}
-          <GoogleButton label="Sign in with Google" redirectTo="/" />
+          <GoogleButton label="Sign in with Google" redirectTo={redirectTo} />
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-6">
