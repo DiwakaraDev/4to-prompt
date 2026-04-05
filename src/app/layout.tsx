@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Inter, Syne } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/components/auth/AuthProvider";
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   description: "Discover, copy and share AI image prompts for Midjourney, DALL·E, and Stable Diffusion.",
   keywords:    ["AI prompts", "Midjourney", "DALL·E", "Stable Diffusion", "image generation"],
   manifest:    "/manifest.json",
-  themeColor:  "#bc67ff",
+  // ✅ themeColor removed — moved to viewport export below
   openGraph: {
     title:       "4to Prompt",
     description: "Discover & copy AI image prompts that actually work.",
@@ -34,6 +35,11 @@ export const metadata: Metadata = {
     card:  "summary_large_image",
     title: "4to Prompt — AI Image Prompt Gallery",
   },
+};
+
+// ✅ themeColor must live here in Next.js 15+
+export const viewport: Viewport = {
+  themeColor: "#bc67ff",
 };
 
 export default function RootLayout({
@@ -53,13 +59,13 @@ export default function RootLayout({
           toastOptions={{
             duration: 3500,
             style: {
-              background:  "#1c1f30",
-              color:       "#eeeeff",
-              border:      "1px solid rgba(188,103,255,0.22)",
+              background:   "#1c1f30",
+              color:        "#eeeeff",
+              border:       "1px solid rgba(188,103,255,0.22)",
               borderRadius: "12px",
-              fontSize:    "13px",
-              padding:     "10px 16px",
-              boxShadow:   "0 8px 32px rgba(0,0,0,0.4)",
+              fontSize:     "13px",
+              padding:      "10px 16px",
+              boxShadow:    "0 8px 32px rgba(0,0,0,0.4)",
             },
             success: { iconTheme: { primary: "#22c55e", secondary: "#1c1f30" } },
             error:   { iconTheme: { primary: "#f05050", secondary: "#1c1f30" } },

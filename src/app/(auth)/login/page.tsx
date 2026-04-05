@@ -1,7 +1,9 @@
 // src/app/(auth)/login/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginWithEmail, getAuthErrorMessage } from "@/services/auth.service";
@@ -14,20 +16,42 @@ import {
 } from "react-icons/ri";
 import type { AuthError } from "firebase/auth";
 
-interface FormState {
-  email:    string;
-  password: string;
+interface FormState  { email: string; password: string; }
+interface FormErrors { email?: string; password?: string; general?: string; }
+
+// ─── Skeleton shown while useSearchParams resolves ───────────────────────────
+function LoginSkeleton() {
+  return (
+    <div className="w-full max-w-[420px]">
+      <div className="glass-strong rounded-3xl overflow-hidden">
+        <div
+          className="h-1 w-full"
+          style={{ background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))" }}
+        />
+        <div className="p-6 flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-2 mb-1">
+            <div className="skeleton rounded-xl" style={{ height: "28px", width: "55%" }} />
+            <div className="skeleton rounded-lg" style={{ height: "14px", width: "70%" }} />
+          </div>
+          <div className="skeleton rounded-xl" style={{ height: "44px" }} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+            <div className="skeleton rounded" style={{ height: "12px", width: "24px" }} />
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+          </div>
+          <div className="skeleton rounded-xl" style={{ height: "44px" }} />
+          <div className="skeleton rounded-xl" style={{ height: "44px" }} />
+          <div className="skeleton rounded-xl" style={{ height: "44px" }} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
-interface FormErrors {
-  email?:    string;
-  password?: string;
-  general?:  string;
-}
-
-export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+// ─── Inner form — consumes useSearchParams (must be inside Suspense) ─────────
+function LoginForm() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();                // ← inside Suspense
   const [form,     setForm]     = useState<FormState>({ email: "", password: "" });
   const [errors,   setErrors]   = useState<FormErrors>({});
   const [loading,  setLoading]  = useState(false);
@@ -36,16 +60,10 @@ export default function LoginPage() {
   const redirectTo = useMemo(() => {
     const raw = searchParams.get("redirectTo");
     if (!raw) return "/";
-
-    // Only allow in-app relative redirects.
-    if (raw.startsWith("/") && !raw.startsWith("//")) {
-      return raw;
-    }
-
+    if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
     return "/";
   }, [searchParams]);
 
-  // ─── Client-side validation ───────────────────────────────
   function validate(): boolean {
     const newErrors: FormErrors = {};
     if (!form.email.trim()) {
@@ -65,10 +83,8 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-
     setLoading(true);
     setErrors({});
-
     try {
       await loginWithEmail(form.email, form.password);
       toast.success("Welcome back!");
@@ -85,27 +101,26 @@ export default function LoginPage() {
 
   function handleChange(field: keyof FormState, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
-    // Clear field error on change
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   }
 
   return (
     <div className="w-full max-w-[420px] animate-fadeInUp">
-
-      {/* Card */}
       <div className="glass-strong rounded-3xl overflow-hidden">
 
         {/* Top gradient bar */}
-        <div className="h-1 w-full"
-          style={{ background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))" }} />
+        <div
+          className="h-1 w-full"
+          style={{ background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))" }}
+        />
 
         <div className="p-6">
 
           {/* Header */}
           <div className="text-center mb-5">
             <h1
-              style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", fontWeight: 800 }}
               className="mb-2"
+              style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", fontWeight: 800 }}
             >
               Welcome Back
             </h1>
@@ -120,9 +135,7 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--color-text-faint)" }}>
-              OR
-            </span>
+            <span className="text-xs font-medium" style={{ color: "var(--color-text-faint)" }}>OR</span>
             <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
           </div>
 
@@ -131,8 +144,8 @@ export default function LoginPage() {
             <div
               className="flex items-start gap-3 px-4 py-3 rounded-xl mb-5 animate-fadeIn"
               style={{
-                background:  "rgba(240,80,80,0.08)",
-                border:      "1px solid rgba(240,80,80,0.22)",
+                background: "rgba(240,80,80,0.08)",
+                border:     "1px solid rgba(240,80,80,0.22)",
               }}
             >
               <span style={{ color: "var(--color-error)", fontSize: "var(--text-sm)" }}>
@@ -166,9 +179,7 @@ export default function LoginPage() {
                 />
               </div>
               {errors.email && (
-                <p id="email-error" className="form-error animate-fadeIn">
-                  {errors.email}
-                </p>
+                <p id="email-error" className="form-error animate-fadeIn">{errors.email}</p>
               )}
             </div>
 
@@ -216,9 +227,7 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p id="password-error" className="form-error animate-fadeIn">
-                  {errors.password}
-                </p>
+                <p id="password-error" className="form-error animate-fadeIn">{errors.password}</p>
               )}
             </div>
 
@@ -247,10 +256,7 @@ export default function LoginPage() {
           </form>
 
           {/* Register link */}
-          <p
-            className="text-center text-sm mt-4"
-            style={{ color: "var(--color-text-muted)" }}
-          >
+          <p className="text-center text-sm mt-4" style={{ color: "var(--color-text-muted)" }}>
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
@@ -263,5 +269,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Page export — wraps form in Suspense ────────────────────────────────────
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginSkeleton />}>
+      <LoginForm />
+    </Suspense>
   );
 }

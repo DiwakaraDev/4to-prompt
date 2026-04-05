@@ -8,7 +8,6 @@ import { usePrompts } from "@/hooks/usePrompts";
 import { searchPrompts } from "@/services/prompts.service";
 import { HeroSection } from "@/components/prompts/HeroSection";
 import { PromptCardSkeleton } from "@/components/prompts/PromptCardSkeleton";
-import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import type { Prompt, PromptCategory } from "@/types";
 import {
@@ -27,7 +26,6 @@ const CATEGORIES: Array<PromptCategory | "All"> = [
 ];
 
 export default function HomePage() {
-  const { user } = useAuth();
 
   const [activeTab,     setActiveTab]     = useState<"all" | "free" | "premium">("all");
   const [activeCategory, setActiveCategory] = useState<PromptCategory | "All">("All");
@@ -203,7 +201,6 @@ export default function HomePage() {
               <PromptCard
                 key={prompt.id}
                 prompt={prompt}
-                isPremiumUser={user?.role === "admin"}
               />
             ))}
 

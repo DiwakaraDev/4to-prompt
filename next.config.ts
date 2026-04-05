@@ -10,13 +10,11 @@ const nextConfig: NextConfig = {
   ],
 
   // ── Tell Turbopack to replace firebase/storage with empty stub ──
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        "firebase/storage":         path.resolve("./src/lib/empty-module.ts"),
-        "@firebase/storage":        path.resolve("./src/lib/empty-module.ts"),
-        "@firebase/storage-compat": path.resolve("./src/lib/empty-module.ts"),
-      },
+  turbopack: {
+    resolveAlias: {
+      "firebase/storage":         path.resolve("./src/lib/empty-module.ts"),
+      "@firebase/storage":        path.resolve("./src/lib/empty-module.ts"),
+      "@firebase/storage-compat": path.resolve("./src/lib/empty-module.ts"),
     },
   },
 

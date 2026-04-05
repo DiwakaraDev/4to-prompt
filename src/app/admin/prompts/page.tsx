@@ -227,6 +227,12 @@ export default function AdminPromptsPage() {
           </div>
         )}
       </div>
+
+      {prompts.length === 100 && (
+        <p className="text-xs text-center mt-4" style={{ color: "var(--color-text-faint)" }}>
+          Showing latest 100 prompts
+        </p>
+      )}
     </div>
   );
 }

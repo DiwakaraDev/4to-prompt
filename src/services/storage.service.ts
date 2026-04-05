@@ -59,6 +59,16 @@ export async function uploadPromptImage(
 }
 
 export async function deleteStorageFile(_imageUrl: string): Promise<void> {
-  // No-op: Cloudinary deletion needs server-side signing
-  // Images remain in Cloudinary but unlinked from Firestore
+  // TODO: Implement server-side deletion via Cloudinary Admin API.
+  // Requires: POST /api/admin/delete-image → cloudinary.uploader.destroy(publicId)
+  // using CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET (server-only env vars).
+  // Images currently remain in Cloudinary storage after prompt deletion.
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      "[storage.service] deleteStorageFile() is a no-op.\n" +
+      "Image was NOT deleted from Cloudinary:\n" +
+      _imageUrl + "\n" +
+      "Implement server-side signing via Cloudinary Admin API to enable deletion."
+    );
+  }
 }

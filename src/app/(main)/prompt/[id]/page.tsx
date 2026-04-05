@@ -1,6 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
+export const dynamic = "force-dynamic";
+
+import nextDynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -40,7 +42,7 @@ import { PremiumLockModal } from "@/components/prompts/PremiumLockModal";
 // Dynamic import of comments section
 // ───────────────────────────────────────────────────────────────
 
-const CommentSection = dynamic(
+const CommentSection = nextDynamic(
   () =>
     import("@/components/comments/CommentSection").then((m) => ({
       default: m.CommentSection,

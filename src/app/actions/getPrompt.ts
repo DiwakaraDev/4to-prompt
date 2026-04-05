@@ -12,19 +12,22 @@ function serializePrompt(data: Record<string, unknown>, id: string): Prompt {
     id,
     createdAt: data.createdAt
       ? {
-          seconds:     (data.createdAt as { _seconds: number })._seconds,
-          nanoseconds: (data.createdAt as { _nanoseconds: number })._nanoseconds,
+          seconds: (data.createdAt as { _seconds: number })._seconds,
+          nanoseconds: (data.createdAt as { _nanoseconds: number })
+            ._nanoseconds,
         }
       : null,
   } as unknown as Prompt;
 }
 
-export async function getPromptSecure(promptId: string): Promise<Prompt | null> {
+export async function getPromptSecure(
+  promptId: string,
+): Promise<Prompt | null> {
   // ── 1. Fetch prompt via Admin SDK ────────────────────────────
   const promptDoc = await adminDb.collection("prompts").doc(promptId).get();
   if (!promptDoc.exists) return null;
 
-  const raw    = promptDoc.data() as Record<string, unknown>;
+  const raw = promptDoc.data() as Record<string, unknown>;
   const prompt = serializePrompt(raw, promptDoc.id);
 
   // ── 2. Free prompt — no gate needed ─────────────────────────
@@ -32,14 +35,14 @@ export async function getPromptSecure(promptId: string): Promise<Prompt | null> 
 
   // ── 3. Premium prompt — verify identity server-side ─────────
   const cookieStore = await cookies();
-  const token       = cookieStore.get("4to-auth-token")?.value;
+  const token = cookieStore.get("4to-auth-token")?.value;
 
   if (!token) {
     return { ...prompt, promptText: "" };
   }
 
   try {
-    const decoded  = await adminAuth.verifyIdToken(token);
+    const decoded = await adminAuth.verifyIdToken(token);
     const userSnap = await adminDb.collection("users").doc(decoded.uid).get();
 
     if (!userSnap.exists) {
@@ -51,7 +54,8 @@ export async function getPromptSecure(promptId: string): Promise<Prompt | null> 
     const isAdmin = userData.role === "admin";
 
     const isPremiumActive = userData.premiumUntil
-      ? (userData.premiumUntil as { _seconds: number })._seconds * 1000 > Date.now()
+      ? (userData.premiumUntil as { seconds: number }).seconds * 1000 >
+        Date.now()
       : false;
 
     if (isAdmin || isPremiumActive) {

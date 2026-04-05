@@ -15,8 +15,10 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "@/firebase/config";
+import { db }      from "@/firebase/config";
 import type { PaymentRequest, PaymentStatus } from "@/types";
+import type { FirebaseTimestamp } from "@/types";
+import { toMs, toDate } from "@/lib/timestamp";
 
 const PAYMENT_COL = "paymentRequests";
 const USERS_COL   = "users";
@@ -32,14 +34,18 @@ const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 // Check if user is currently premium
 // ─────────────────────────────────────────────────────────────
 
-export function isPremiumActive(premiumUntil?: Timestamp | null): boolean {
-  if (!premiumUntil) return false;
-  return premiumUntil.toDate().getTime() > Date.now();
+export function isPremiumActive(
+  premiumUntil?: FirebaseTimestamp | null,
+): boolean {
+  return toMs(premiumUntil) > Date.now();
 }
 
-export function premiumExpiryLabel(premiumUntil?: Timestamp | null): string {
+export function premiumExpiryLabel(
+  premiumUntil?: FirebaseTimestamp | null,
+): string {
   if (!premiumUntil) return "Not active";
-  const d = premiumUntil.toDate();
+  const d = toDate(premiumUntil);
+  if (!d) return "Not active";
   if (d.getTime() < Date.now()) return "Expired";
   return `Valid until ${d.toLocaleDateString("en-US", {
     year:  "numeric",
@@ -60,13 +66,11 @@ export async function submitPaymentRequest(
   // Prevent duplicate pending requests
   const q = query(
     collection(db, PAYMENT_COL),
-    where("userId", "==", userId),
-    where("status", "==", "pending"),
+    where("userId",  "==", userId),
+    where("status",  "==", "pending"),
   );
   const existing = await getDocs(q);
-  if (!existing.empty) {
-    return existing.docs[0].id;
-  }
+  if (!existing.empty) return existing.docs[0].id;
 
   const ref = doc(collection(db, PAYMENT_COL));
   await setDoc(ref, {
@@ -111,12 +115,9 @@ export async function fetchPaymentRequests(
 ): Promise<PaymentRequest[]> {
   const colRef = collection(db, PAYMENT_COL);
 
+  // ✅ toMs() handles both Timestamp and plain { seconds, nanoseconds }
   const sortByDate = (items: PaymentRequest[]) =>
-    items.sort((a, b) => {
-      const aMs = a.requestedAt?.toMillis?.() ?? 0;
-      const bMs = b.requestedAt?.toMillis?.() ?? 0;
-      return bMs - aMs;
-    });
+    items.sort((a, b) => toMs(b.requestedAt) - toMs(a.requestedAt));
 
   try {
     const constraints = status
@@ -162,11 +163,11 @@ export async function approvePaymentRequest(
   const premiumUntil = Timestamp.fromMillis(Date.now() + ONE_YEAR_MS);
 
   await updateDoc(requestRef, {
-    status:      "approved",
-    approvedAt:  serverTimestamp(),
-    approvedBy:  adminUid,
+    status:       "approved",
+    approvedAt:   serverTimestamp(),
+    approvedBy:   adminUid,
     premiumUntil,
-    note:        "",
+    note:         "",
   });
 
   await updateDoc(doc(db, USERS_COL, userId), {
@@ -193,7 +194,7 @@ export async function rejectPaymentRequest(
 }
 
 // ─────────────────────────────────────────────────────────────
-// Admin: revoke an approved request by mistake
+// Admin: revoke an approved request
 // → reverts request to "pending" + locks user immediately
 // ─────────────────────────────────────────────────────────────
 
@@ -207,7 +208,6 @@ export async function revokeApproval(
 
   const userId = requestSnap.data().userId as string;
 
-  // 1. Revert request to pending — keeps audit trail, admin can re-approve
   await updateDoc(requestRef, {
     status:       "pending",
     approvedAt:   null,
@@ -216,7 +216,6 @@ export async function revokeApproval(
     note:         `Revoked by admin (${adminUid})`,
   });
 
-  // 2. Lock user — remove premium access immediately
   await updateDoc(doc(db, USERS_COL, userId), {
     isPremium:    false,
     premiumUntil: null,
@@ -234,28 +233,26 @@ export async function grantPremium(
   const premiumUntil = Timestamp.fromMillis(Date.now() + ONE_YEAR_MS);
 
   await updateDoc(doc(db, USERS_COL, userId), {
-    isPremium:   true,
+    isPremium:    true,
     premiumUntil,
   });
 
-  // Log as an approved request for audit trail
   const ref = doc(collection(db, PAYMENT_COL));
   await setDoc(ref, {
     userId,
-    userName:     "Manual Grant",
-    userEmail:    "-",
-    status:       "approved",
-    requestedAt:  serverTimestamp(),
-    approvedAt:   serverTimestamp(),
-    approvedBy:   adminUid,
+    userName:    "Manual Grant",
+    userEmail:   "-",
+    status:      "approved",
+    requestedAt: serverTimestamp(),
+    approvedAt:  serverTimestamp(),
+    approvedBy:  adminUid,
     premiumUntil,
-    note:         "Manually granted by admin",
+    note:        "Manually granted by admin",
   });
 }
 
 // ─────────────────────────────────────────────────────────────
 // Admin: hard revoke premium (no request trail)
-// Use this from the Users management panel
 // ─────────────────────────────────────────────────────────────
 
 export async function revokePremium(userId: string): Promise<void> {
@@ -281,6 +278,5 @@ export function buildWhatsAppLink(
     `🔖 Request ID: ${requestId}\n\n` +
     `Please activate my premium access. Thank you!`,
   );
-
   return `https://wa.me/${ADMIN_WHATSAPP}?text=${message}`;
 }

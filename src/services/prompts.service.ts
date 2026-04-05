@@ -166,7 +166,7 @@ export async function fetchPromptById(id: string): Promise<Prompt | null> {
  * Used in the admin panel only — no pagination, no cache.
  */
 export async function fetchAllPromptsAdmin(): Promise<Prompt[]> {
-  const q    = query(collection(db, COL), orderBy("createdAt", "desc"));
+  const q    = query(collection(db, COL), orderBy("createdAt", "desc"), limit(100));
   const snap = await getDocs(q);
   return snap.docs.map(docToPrompt);
 }

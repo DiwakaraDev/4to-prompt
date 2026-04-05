@@ -3,7 +3,7 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import { CldUploadWidget } from "next-cloudinary";
+import { CldUploadWidget, type CloudinaryUploadWidgetOptions } from "next-cloudinary";
 import { RiCameraLine, RiLoader4Line, RiUserLine } from "react-icons/ri";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,12 +29,49 @@ const SIZE_MAP = {
   lg: { outer: 128, icon: 28, camera: 22 },
 };
 
+// Extend the incomplete upstream type to include `transformation`
+// which is a valid Cloudinary Upload Widget option omitted from @types
+type WidgetOptions = CloudinaryUploadWidgetOptions & {
+  transformation?: Array<Record<string, unknown>>;
+};
+
+const UPLOAD_OPTIONS: WidgetOptions = {
+  maxFiles:              1,
+  resourceType:          "image",
+  cropping:              true,
+  croppingAspectRatio:   1,
+  croppingShowDimensions: true,
+  folder:                "4to-prompt/avatars",
+  sources:               ["local", "camera"],
+  transformation: [
+    { width: 400, height: 400, crop: "fill", gravity: "face" },
+    { quality: "auto", fetch_format: "auto" },
+  ],
+  styles: {
+    palette: {
+      window:          "#1a1d26",
+      windowBorder:    "#bc67ff",
+      tabIcon:         "#bc67ff",
+      menuIcons:       "#a0a0a0",
+      textDark:        "#f0f0f0",
+      textLight:       "#ffffff",
+      link:            "#bc67ff",
+      action:          "#bc67ff",
+      inactiveTabIcon: "#555a67",
+      error:           "#ff00d4",
+      inProgress:      "#00f2ff",
+      complete:        "#33ff00",
+      sourceBg:        "#12141f",
+    },
+  },
+};
+
 export function ProfileImageUpload({
   size      = "md",
   showLabel = true,
 }: ProfileImageUploadProps) {
-  const { user }    = useAuth();
-  const setUser     = useAuthStore((s) => s.setUser);
+  const { user }  = useAuth();
+  const setUser   = useAuthStore((s) => s.setUser);
   const [uploading, setUploading] = useState(false);
   const dim = SIZE_MAP[size];
 
@@ -61,37 +98,7 @@ export function ProfileImageUpload({
     <div className="flex flex-col items-center gap-3">
       <CldUploadWidget
         uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-        // ↑ unsigned preset — no signatureEndpoint needed
-        options={{
-          maxFiles:             1,
-          resourceType:         "image",
-          cropping:             true,
-          croppingAspectRatio:  1,
-          croppingShowDimensions: true,
-          folder:               "4to-prompt/avatars",
-          sources:              ["local", "camera"],
-          transformation: [
-            { width: 400, height: 400, crop: "fill", gravity: "face" },
-            { quality: "auto", fetch_format: "auto" },
-          ],
-          styles: {
-            palette: {
-              window:         "#1a1d26",
-              windowBorder:   "#bc67ff",
-              tabIcon:        "#bc67ff",
-              menuIcons:      "#a0a0a0",
-              textDark:       "#f0f0f0",
-              textLight:      "#ffffff",
-              link:           "#bc67ff",
-              action:         "#bc67ff",
-              inactiveTabIcon:"#555a67",
-              error:          "#ff00d4",
-              inProgress:     "#00f2ff",
-              complete:       "#33ff00",
-              sourceBg:       "#12141f",
-            },
-          },
-        }}
+        options={UPLOAD_OPTIONS}
         onSuccess={(result) => {
           if (
             result.event === "success" &&

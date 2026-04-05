@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/auth.store";
 import { logout } from "@/services/auth.service";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -61,6 +62,7 @@ function Logo() {
 
 export function Navbar() {
   const { user, loading } = useAuth();
+  const setUser           = useAuthStore((s) => s.setUser);
   const pathname          = usePathname();
   const router            = useRouter();
   const [mobileOpen,  setMobileOpen]  = useState(false);
@@ -88,6 +90,7 @@ export function Navbar() {
   async function handleLogout() {
     try {
       await logout();
+      setUser(null);
       setProfileOpen(false);
       toast.success("Signed out.");
       router.push("/");
