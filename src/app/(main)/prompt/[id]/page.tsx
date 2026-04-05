@@ -6,13 +6,14 @@ import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
-  fetchPromptById,
   likePrompt,
   unlikePrompt,
   hasUserLikedPrompt,
 } from "@/services/prompts.service";
+// ✅ CHANGED: import the secure server action instead of fetchPromptById
+import { getPromptSecure } from "@/app/actions/getPrompt";
 import { useAuth } from "@/hooks/useAuth";
-import { usePremium } from "@/hooks/usePremium"; // ✅ ADD THIS
+import { usePremium } from "@/hooks/usePremium";
 import { formatDate, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import type { Prompt } from "@/types";
@@ -90,7 +91,6 @@ function PromptDetailSkeleton() {
         className="skeleton rounded-xl"
         style={{ height: "32px", width: "100px" }}
       />
-
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
         <div
           className="skeleton rounded-2xl"
@@ -98,63 +98,28 @@ function PromptDetailSkeleton() {
         />
         <div className="flex flex-col gap-4">
           <div className="glass rounded-2xl p-5 flex flex-col gap-3">
-            <div
-              className="skeleton rounded"
-              style={{ height: "14px", width: "40%" }}
-            />
-            <div
-              className="skeleton rounded"
-              style={{ height: "28px", width: "75%" }}
-            />
+            <div className="skeleton rounded" style={{ height: "14px", width: "40%" }} />
+            <div className="skeleton rounded" style={{ height: "28px", width: "75%" }} />
             <div className="flex gap-2">
-              <div
-                className="skeleton rounded-full"
-                style={{ height: "22px", width: "70px" }}
-              />
-              <div
-                className="skeleton rounded-full"
-                style={{ height: "22px", width: "60px" }}
-              />
+              <div className="skeleton rounded-full" style={{ height: "22px", width: "70px" }} />
+              <div className="skeleton rounded-full" style={{ height: "22px", width: "60px" }} />
             </div>
-            <div
-              className="skeleton rounded-xl"
-              style={{ height: "1px", width: "100%", marginBlock: "4px" }}
-            />
+            <div className="skeleton rounded-xl" style={{ height: "1px", width: "100%", marginBlock: "4px" }} />
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="skeleton rounded"
-                style={{
-                  height: "11px",
-                  width: i === 3 ? "50%" : "90%",
-                }}
-              />
+              <div key={i} className="skeleton rounded" style={{ height: "11px", width: i === 3 ? "50%" : "90%" }} />
             ))}
           </div>
           <div className="skeleton rounded-2xl" style={{ height: "52px" }} />
         </div>
       </div>
-
       <div className="glass rounded-2xl p-6">
-        <div
-          className="skeleton rounded"
-          style={{ height: "11px", width: "120px", marginBottom: "16px" }}
-        />
+        <div className="skeleton rounded" style={{ height: "11px", width: "120px", marginBottom: "16px" }} />
         {[1, 2].map((i) => (
           <div key={i} className="flex gap-3 mb-4">
-            <div
-              className="skeleton rounded-lg shrink-0"
-              style={{ width: "28px", height: "28px" }}
-            />
+            <div className="skeleton rounded-lg shrink-0" style={{ width: "28px", height: "28px" }} />
             <div className="flex-1 flex flex-col gap-2">
-              <div
-                className="skeleton rounded"
-                style={{ height: "10px", width: "25%" }}
-              />
-              <div
-                className="skeleton rounded"
-                style={{ height: "12px", width: "70%" }}
-              />
+              <div className="skeleton rounded" style={{ height: "10px", width: "25%" }} />
+              <div className="skeleton rounded" style={{ height: "12px", width: "70%" }} />
             </div>
           </div>
         ))}
@@ -188,25 +153,17 @@ function PremiumLock({ onUnlock }: { onUnlock: () => void }) {
       >
         <RiVipCrownLine size={26} style={{ color: "var(--color-gold)" }} />
       </div>
-
       <div className="text-center animate-fadeInUp stagger-1">
         <p
           className="font-bold text-base mb-1"
-          style={{
-            fontFamily: "var(--font-display)",
-            color: "var(--color-gold)",
-          }}
+          style={{ fontFamily: "var(--font-display)", color: "var(--color-gold)" }}
         >
           Premium Prompt
         </p>
-        <p
-          className="text-xs max-w-[200px]"
-          style={{ color: "var(--color-text-muted)" }}
-        >
+        <p className="text-xs max-w-[200px]" style={{ color: "var(--color-text-muted)" }}>
           Unlock this prompt to see the full text
         </p>
       </div>
-
       <div className="flex flex-col gap-2 animate-fadeInUp stagger-2 w-[180px]">
         <button
           onClick={onUnlock}
@@ -241,12 +198,10 @@ function CopyButton({ text, isLocked }: { text: string; isLocked: boolean }) {
       router.push("/login");
       return;
     }
-
     if (isLocked) {
       toast.error("Unlock premium to copy this prompt");
       return;
     }
-
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -278,15 +233,9 @@ function CopyButton({ text, isLocked }: { text: string; isLocked: boolean }) {
       style={{ minHeight: "44px" }}
     >
       {copied ? (
-        <>
-          <RiCheckLine size={16} />
-          Copied!
-        </>
+        <><RiCheckLine size={16} />Copied!</>
       ) : (
-        <>
-          <RiFileCopyLine size={16} />
-          Copy Prompt
-        </>
+        <><RiFileCopyLine size={16} />Copy Prompt</>
       )}
     </button>
   );
@@ -296,13 +245,7 @@ function CopyButton({ text, isLocked }: { text: string; isLocked: boolean }) {
 // Like button
 // ───────────────────────────────────────────────────────────────
 
-function LikeButton({
-  promptId,
-  initialCount,
-}: {
-  promptId: string;
-  initialCount: number;
-}) {
+function LikeButton({ promptId, initialCount }: { promptId: string; initialCount: number }) {
   const { user } = useAuth();
   const router = useRouter();
   const [liked, setLiked] = useState(false);
@@ -311,23 +254,15 @@ function LikeButton({
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setChecked(true);
-      return;
-    }
+    if (!user) { setChecked(true); return; }
     hasUserLikedPrompt(promptId, user.uid)
       .then(setLiked)
       .finally(() => setChecked(true));
   }, [promptId, user]);
 
   async function handleToggle() {
-    if (!user) {
-      toast.error("Sign in to like prompts.");
-      router.push("/login");
-      return;
-    }
+    if (!user) { toast.error("Sign in to like prompts."); router.push("/login"); return; }
     if (loading) return;
-
     setLoading(true);
     try {
       if (liked) {
@@ -366,10 +301,7 @@ function LikeButton({
       }}
     >
       {loading ? (
-        <span
-          className="w-4 h-4 border-2 border-current/20 border-t-current
-                     rounded-full animate-spin"
-        />
+        <span className="w-4 h-4 border-2 border-current/20 border-t-current rounded-full animate-spin" />
       ) : liked ? (
         <RiHeartFill size={16} style={{ color: "#ff6b6b" }} />
       ) : (
@@ -384,15 +316,7 @@ function LikeButton({
 // Share button
 // ───────────────────────────────────────────────────────────────
 
-function ShareButton({
-  promptId,
-  title,
-  text,
-}: {
-  promptId: string;
-  title: string;
-  text: string;
-}) {
+function ShareButton({ promptId, title, text }: { promptId: string; title: string; text: string }) {
   const { user } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -406,93 +330,48 @@ function ShareButton({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   async function handleNativeShare() {
-    if (!user) {
-      toast.error("Sign in to share prompts.");
-      router.push("/login");
-      return;
-    }
-
+    if (!user) { toast.error("Sign in to share prompts."); router.push("/login"); return; }
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text: text.slice(0, 100),
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        // fall back to menu
-      }
+      try { await navigator.share({ title, text: text.slice(0, 100), url: shareUrl }); return; }
+      catch { /* fall back to menu */ }
     }
     setOpen((v) => !v);
   }
 
   async function handleCopy() {
-    if (!user) {
-      toast.error("Sign in to share prompts.");
-      router.push("/login");
-      return;
-    }
-
+    if (!user) { toast.error("Sign in to share prompts."); router.push("/login"); return; }
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success("Link copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy link");
-    }
+    } catch { toast.error("Failed to copy link"); }
   }
 
   function handleWhatsApp() {
-    if (!user) {
-      toast.error("Sign in to share prompts.");
-      router.push("/login");
-      return;
-    }
-    const msg = encodeURIComponent(
-      `${title}\n\nCheck this AI prompt 👇\n${shareUrl}`
-    );
+    if (!user) { toast.error("Sign in to share prompts."); router.push("/login"); return; }
+    const msg = encodeURIComponent(`${title}\n\nCheck this AI prompt 👇\n${shareUrl}`);
     window.open(`https://wa.me/?text=${msg}`, "_blank", "noopener");
   }
 
   function handleTwitter() {
-    if (!user) {
-      toast.error("Sign in to share prompts.");
-      router.push("/login");
-      return;
-    }
-    const msg = encodeURIComponent(`${title} — ${text.slice(0, 80)}...`);
-    const url = encodeURIComponent(shareUrl);
+    if (!user) { toast.error("Sign in to share prompts."); router.push("/login"); return; }
+    const msg  = encodeURIComponent(`${title} — ${text.slice(0, 80)}...`);
+    const url  = encodeURIComponent(shareUrl);
     const tags = encodeURIComponent("AIArt,MidJourney,AIPrompt");
-    window.open(
-      `https://twitter.com/intent/tweet?text=${msg}&url=${url}&hashtags=${tags}`,
-      "_blank",
-      "noopener"
-    );
+    window.open(`https://twitter.com/intent/tweet?text=${msg}&url=${url}&hashtags=${tags}`, "_blank", "noopener");
   }
 
   function handleFacebook() {
-    if (!user) {
-      toast.error("Sign in to share prompts.");
-      router.push("/login");
-      return;
-    }
-    const url = encodeURIComponent(shareUrl);
-    window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-      "_blank",
-      "noopener"
-    );
+    if (!user) { toast.error("Sign in to share prompts."); router.push("/login"); return; }
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank", "noopener");
   }
 
   return (
@@ -511,7 +390,6 @@ function ShareButton({
         <RiShareForwardLine size={16} />
         Share
       </button>
-
       {open && (
         <div
           className={cn(
@@ -520,36 +398,12 @@ function ShareButton({
             "bg-[rgba(14,16,26,0.98)] shadow-2xl backdrop-blur-xl"
           )}
         >
-          <div className="px-3 py-2 text-xs text-[var(--color-text-faint)]">
-            Share this prompt
-          </div>
+          <div className="px-3 py-2 text-xs text-[var(--color-text-faint)]">Share this prompt</div>
           <div className="flex flex-col px-1 pb-2">
-            <ShareOption
-              icon={
-                copied ? (
-                  <RiCheckLine className="text-emerald-400" size={14} />
-                ) : (
-                  <FiLink size={14} />
-                )
-              }
-              label={copied ? "Link copied" : "Copy link"}
-              onClick={handleCopy}
-            />
-            <ShareOption
-              icon={<FaWhatsapp className="text-emerald-400" size={14} />}
-              label="WhatsApp"
-              onClick={handleWhatsApp}
-            />
-            <ShareOption
-              icon={<FaTwitter className="text-sky-400" size={14} />}
-              label="Twitter / X"
-              onClick={handleTwitter}
-            />
-            <ShareOption
-              icon={<FaFacebookF className="text-blue-500" size={14} />}
-              label="Facebook"
-              onClick={handleFacebook}
-            />
+            <ShareOption icon={copied ? <RiCheckLine className="text-emerald-400" size={14} /> : <FiLink size={14} />} label={copied ? "Link copied" : "Copy link"} onClick={handleCopy} />
+            <ShareOption icon={<FaWhatsapp className="text-emerald-400" size={14} />} label="WhatsApp" onClick={handleWhatsApp} />
+            <ShareOption icon={<FaTwitter className="text-sky-400" size={14} />} label="Twitter / X" onClick={handleTwitter} />
+            <ShareOption icon={<FaFacebookF className="text-blue-500" size={14} />} label="Facebook" onClick={handleFacebook} />
           </div>
         </div>
       )}
@@ -557,15 +411,7 @@ function ShareButton({
   );
 }
 
-function ShareOption({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
+function ShareOption({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -585,26 +431,26 @@ function ShareOption({
 // ───────────────────────────────────────────────────────────────
 
 export default function PromptDetailPage() {
-  const params = useParams();
-  const router = useRouter();
+  const params       = useParams();
+  const router       = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const id = params?.id as string;
+  const { user }     = useAuth();
+  const id           = params?.id as string;
 
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [prompt, setPrompt]               = useState<Prompt | null>(null);
+  const [loading, setLoading]             = useState(true);
+  const [notFound, setNotFound]           = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   const loadPrompt = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const data = await fetchPromptById(id);
-      if (!data) {
-        setNotFound(true);
-        return;
-      }
+      // ✅ CHANGED: calls secure server action — promptText is
+      //    stripped server-side for free users before it ever
+      //    reaches the browser
+      const data = await getPromptSecure(id);
+      if (!data) { setNotFound(true); return; }
       setPrompt(data);
     } catch {
       setNotFound(true);
@@ -613,42 +459,31 @@ export default function PromptDetailPage() {
     }
   }, [id]);
 
-  useEffect(() => {
-    loadPrompt();
-  }, [loadPrompt]);
+  useEffect(() => { loadPrompt(); }, [loadPrompt]);
 
-  // ✅ FIX: use usePremium hook — reads premiumUntil from auth store
   const { canViewPremium, isAdmin } = usePremium();
-  const isPremium = prompt?.isPremium ?? false;
-  const canViewFull = !isPremium || canViewPremium;   // free prompts always visible; premium unlocked for premium/admin users
-  const isLocked = isPremium && !canViewPremium;       // locked only when prompt is premium AND user can't view
+  const isPremium  = prompt?.isPremium ?? false;
+  const canViewFull = !isPremium || canViewPremium;
+  const isLocked   = isPremium && !canViewPremium;
 
   const shouldAutoOpenUnlock = searchParams.get("unlock") === "premium";
 
   const handleUnlockPremium = useCallback(() => {
     if (!isLocked) return;
-
     if (!user) {
-      const returnTo = `/prompt/${id}?unlock=premium`;
-      router.push(`/login?redirectTo=${encodeURIComponent(returnTo)}`);
+      router.push(`/login?redirectTo=${encodeURIComponent(`/prompt/${id}?unlock=premium`)}`);
       return;
     }
-
     setShowUnlockModal(true);
   }, [id, isLocked, router, user]);
 
   const handleUnlockModalClose = useCallback(() => {
     setShowUnlockModal(false);
-
-    if (shouldAutoOpenUnlock) {
-      router.replace(`/prompt/${id}`);
-    }
+    if (shouldAutoOpenUnlock) router.replace(`/prompt/${id}`);
   }, [id, router, shouldAutoOpenUnlock]);
 
   useEffect(() => {
-    if (!isLocked || !user) return;
-    if (!shouldAutoOpenUnlock) return;
-
+    if (!isLocked || !user || !shouldAutoOpenUnlock) return;
     setShowUnlockModal(true);
   }, [isLocked, shouldAutoOpenUnlock, user]);
 
@@ -662,23 +497,15 @@ export default function PromptDetailPage() {
       >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center"
-          style={{
-            background: "var(--color-surface-2)",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
+          style={{ background: "var(--color-surface-2)", border: "1px solid rgba(255,255,255,0.07)" }}
         >
           <RiImageLine size={24} style={{ color: "var(--color-text-faint)" }} />
         </div>
         <div className="text-center">
-          <p
-            className="font-bold text-base mb-1"
-            style={{ color: "var(--color-text)" }}
-          >
+          <p className="font-bold text-base mb-1" style={{ color: "var(--color-text)" }}>
             Prompt Not Found
           </p>
-          <p className="text-sm">
-            This prompt may have been removed or doesn&apos;t exist.
-          </p>
+          <p className="text-sm">This prompt may have been removed or doesn&apos;t exist.</p>
         </div>
         <button onClick={() => router.push("/")} className="btn btn-primary">
           <RiArrowLeftLine size={15} />
@@ -689,13 +516,7 @@ export default function PromptDetailPage() {
   }
 
   return (
-    <div
-      className="min-h-dvh"
-      style={{
-        background: "var(--color-bg)",
-        paddingBottom: "var(--space-16)",
-      }}
-    >
+    <div className="min-h-dvh" style={{ background: "var(--color-bg)", paddingBottom: "var(--space-16)" }}>
       {showUnlockModal && <PremiumLockModal onClose={handleUnlockModalClose} />}
 
       <div
@@ -703,10 +524,8 @@ export default function PromptDetailPage() {
         className="fixed inset-0 -z-10 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 70% 50% at 30% 20%,
-              rgba(188,103,255,0.07) 0%, transparent 55%),
-            radial-gradient(ellipse 50% 40% at 80% 70%,
-              rgba(0,242,255,0.05) 0%, transparent 55%)
+            radial-gradient(ellipse 70% 50% at 30% 20%, rgba(188,103,255,0.07) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 40% at 80% 70%, rgba(0,242,255,0.05) 0%, transparent 55%)
           `,
         }}
       />
@@ -714,14 +533,10 @@ export default function PromptDetailPage() {
       <div className="max-w-5xl mx-auto px-4 py-7 flex flex-col gap-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm font-medium w-fit
-                     transition-all duration-150 group"
+          className="flex items-center gap-2 text-sm font-medium w-fit transition-all duration-150 group"
           style={{ color: "var(--color-text-muted)" }}
         >
-          <RiArrowLeftLine
-            size={16}
-            className="transition-transform duration-150 group-hover:-translate-x-0.5"
-          />
+          <RiArrowLeftLine size={16} className="transition-transform duration-150 group-hover:-translate-x-0.5" />
           Back
         </button>
 
@@ -750,10 +565,7 @@ export default function PromptDetailPage() {
                 <>
                   <div
                     className="absolute inset-0 z-[5]"
-                    style={{
-                      backdropFilter: "blur(18px)",
-                      WebkitBackdropFilter: "blur(18px)",
-                    }}
+                    style={{ backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
                   />
                   <PremiumLock onUnlock={handleUnlockPremium} />
                 </>
@@ -763,11 +575,7 @@ export default function PromptDetailPage() {
                 <div className="absolute top-3 left-3 z-20">
                   <span
                     className="badge badge-premium animate-fadeIn"
-                    style={{
-                      padding: "5px 10px",
-                      fontSize: "11px",
-                      boxShadow: "0 4px 12px rgba(245,200,66,0.25)",
-                    }}
+                    style={{ padding: "5px 10px", fontSize: "11px", boxShadow: "0 4px 12px rgba(245,200,66,0.25)" }}
                   >
                     <RiVipCrownLine size={11} />
                     Premium
@@ -803,15 +611,9 @@ export default function PromptDetailPage() {
                   {prompt.category}
                 </span>
                 {isPremium ? (
-                  <span className="badge badge-premium">
-                    <RiVipCrownLine size={10} />
-                    Premium
-                  </span>
+                  <span className="badge badge-premium"><RiVipCrownLine size={10} />Premium</span>
                 ) : (
-                  <span className="badge badge-free">
-                    <RiCheckLine size={10} />
-                    Free
-                  </span>
+                  <span className="badge badge-free"><RiCheckLine size={10} />Free</span>
                 )}
               </div>
 
@@ -829,40 +631,24 @@ export default function PromptDetailPage() {
               </h1>
 
               <div className="flex flex-col gap-1.5">
-                <div
-                  className="flex items-center gap-2 text-xs"
-                  style={{ color: "var(--color-text-faint)" }}
-                >
+                <div className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-faint)" }}>
                   <RiUserLine size={12} />
                   <span>
                     By{" "}
-                    <span
-                      style={{
-                        color: "var(--color-text-muted)",
-                        fontWeight: 600,
-                      }}
-                    >
+                    <span style={{ color: "var(--color-text-muted)", fontWeight: 600 }}>
                       {prompt.createdByName}
                     </span>
                   </span>
                 </div>
                 {prompt.createdAt && (
-                  <div
-                    className="flex items-center gap-2 text-xs"
-                    style={{ color: "var(--color-text-faint)" }}
-                  >
+                  <div className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-faint)" }}>
                     <RiCalendarLine size={12} />
                     <span>{formatDate(prompt.createdAt)}</span>
                   </div>
                 )}
               </div>
 
-              <div
-                style={{
-                  height: "1px",
-                  background: "rgba(255,255,255,0.06)",
-                }}
-              />
+              <div style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />
 
               <div>
                 <div
@@ -874,8 +660,7 @@ export default function PromptDetailPage() {
 
                 {canViewFull ? (
                   <div
-                    className="relative rounded-xl p-4 font-mono text-sm leading-relaxed
-                               select-all cursor-text"
+                    className="relative rounded-xl p-4 font-mono text-sm leading-relaxed select-all cursor-text"
                     style={{
                       background: "rgba(0,0,0,0.28)",
                       border: "1px solid rgba(255,255,255,0.07)",
@@ -895,6 +680,7 @@ export default function PromptDetailPage() {
                   </div>
                 ) : (
                   <div className="relative rounded-xl overflow-hidden">
+                    {/* ✅ promptText is "" from server — never show real text in DOM */}
                     <div
                       className="p-4 font-mono text-sm leading-relaxed select-none"
                       style={{
@@ -909,29 +695,15 @@ export default function PromptDetailPage() {
                       }}
                       aria-hidden="true"
                     >
-                      {prompt.promptText
-                        .slice(0, 80)
-                        .replace(/\S/g, "•")}{" "}
-                      {prompt.promptText
-                        .slice(80, 180)
-                        .replace(/\S/g, "◦")}
-                      …
+                      {"•••••• •••• •••••••••• •••••••• ••••• •••••••• ••••••••••• ••••••"}
+                      {" •••• •••••••••• •••••••• ••••••••••••••• ••••••• •••••••••"}
                     </div>
                     <div
                       className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl"
-                      style={{
-                        background: "rgba(10,12,22,0.70)",
-                        backdropFilter: "blur(4px)",
-                      }}
+                      style={{ background: "rgba(10,12,22,0.70)", backdropFilter: "blur(4px)" }}
                     >
-                      <RiLockLine
-                        size={18}
-                        style={{ color: "var(--color-gold)" }}
-                      />
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: "var(--color-gold)" }}
-                      >
+                      <RiLockLine size={18} style={{ color: "var(--color-gold)" }} />
+                      <span className="text-xs font-semibold" style={{ color: "var(--color-gold)" }}>
                         Premium Only
                       </span>
                     </div>
@@ -940,20 +712,12 @@ export default function PromptDetailPage() {
               </div>
             </div>
 
-            {/* ACTION BAR: Copy + Like + Share */}
+            {/* ACTION BAR */}
             <div className="flex flex-col gap-2.5 animate-fadeInUp stagger-1">
               <CopyButton text={prompt.promptText} isLocked={isLocked} />
-
               <div className="flex flex-wrap items-center gap-2">
-                <LikeButton
-                  promptId={prompt.id}
-                  initialCount={prompt.likesCount ?? 0}
-                />
-                <ShareButton
-                  promptId={prompt.id}
-                  title={prompt.title}
-                  text={prompt.promptText}
-                />
+                <LikeButton promptId={prompt.id} initialCount={prompt.likesCount ?? 0} />
+                <ShareButton promptId={prompt.id} title={prompt.title} text={prompt.promptText} />
               </div>
             </div>
 
@@ -966,16 +730,10 @@ export default function PromptDetailPage() {
                   Admin Actions
                 </div>
                 <div className="flex gap-2">
-                  <Link
-                    href={`/admin/prompts`}
-                    className="btn btn-ghost btn-sm flex-1 justify-center"
-                  >
+                  <Link href="/admin/prompts" className="btn btn-ghost btn-sm flex-1 justify-center">
                     Manage Prompts
                   </Link>
-                  <Link
-                    href={`/admin/upload`}
-                    className="btn btn-secondary btn-sm flex-1 justify-center"
-                  >
+                  <Link href="/admin/upload" className="btn btn-secondary btn-sm flex-1 justify-center">
                     Add New
                   </Link>
                 </div>
