@@ -4,9 +4,10 @@
 import { useAuth } from "@/hooks/useAuth";
 import { usePremium } from "@/hooks/usePremium";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/utils";
 import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
+import { PremiumLockModal } from "@/components/prompts/PremiumLockModal";
 import {
   RiUserLine,
   RiMailLine,
@@ -23,6 +24,7 @@ export default function ProfilePage() {
   const { user, loading } = useAuth();
   const { isActive, expiryLabel } = usePremium();
   const router = useRouter();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -236,7 +238,7 @@ export default function ProfilePage() {
             {/* Upgrade CTA — only when not premium */}
             {!isActive && (
               <button
-                onClick={() => router.push("/?unlock=premium")}
+                onClick={() => setShowPremiumModal(true)}
                 className="mt-4 w-full rounded-2xl py-2.5 text-sm font-bold text-[#1a1200] transition-opacity hover:opacity-90"
                 style={{
                   background: "linear-gradient(135deg, #f5c842, #e0a800)",
@@ -248,6 +250,10 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+          {showPremiumModal && (
+            <PremiumLockModal onClose={() => setShowPremiumModal(false)} />
+          )}
+
 
         {/* ── Account details ───────────────────────────────── */}
         <div
