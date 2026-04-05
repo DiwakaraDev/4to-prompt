@@ -90,7 +90,7 @@ export function HeroSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* ── LEFT COLUMN ─────────────────────────────────── */}
-          <div className="flex flex-col items-start">
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
 
             {/* Eyebrow */}
             <div
@@ -147,7 +147,7 @@ export function HeroSection() {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3 mb-10 animate-fadeInUp stagger-3">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-10 animate-fadeInUp stagger-3">
               <Link href="/#prompts" className="btn btn-primary btn-lg group">
                 <RiSearchLine size={17} />
                 Browse Prompts
@@ -162,7 +162,7 @@ export function HeroSection() {
 
             {/* Social proof */}
             <div
-              className="flex items-center gap-6 animate-fadeInUp stagger-4"
+              className="flex flex-wrap items-center justify-center lg:justify-start gap-6 animate-fadeInUp stagger-4"
               style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "var(--space-6)" }}
             >
               {[

@@ -12,13 +12,14 @@ import {
   RiDashboardLine, RiImageAddLine, RiImageLine,
   RiUserLine, RiChat3Line, RiLogoutBoxLine,
   RiMenuLine, RiCloseLine, RiArrowLeftLine,
-  RiShieldUserLine,
+  RiShieldUserLine, RiVipCrownLine,
 } from "react-icons/ri";
 
 const NAV = [
   { href: "/admin/dashboard", icon: <RiDashboardLine size={17} />, label: "Dashboard" },
   { href: "/admin/prompts",   icon: <RiImageLine     size={17} />, label: "Prompts"   },
   { href: "/admin/upload",    icon: <RiImageAddLine  size={17} />, label: "Add Prompt" },
+  { href: "/admin/payments",  icon: <RiVipCrownLine  size={17} />, label: "Payments"  },
   { href: "/admin/users",     icon: <RiUserLine      size={17} />, label: "Users"     },
   { href: "/admin/comments",  icon: <RiChat3Line     size={17} />, label: "Comments"  },
 ];

@@ -2,20 +2,9 @@
 
 import { Timestamp } from "firebase/firestore";
 
-// ─── User ───────────────────────────────────────────────────────
 export type UserRole = "user" | "admin";
-
-export interface AppUser {
-  uid: string;
-  name: string;
-  email: string;
-  photoURL?: string;
-  role: UserRole;
-  createdAt: Timestamp;
-}
-
-// ─── Prompt ─────────────────────────────────────────────────────
 export type PromptType = "FREE" | "PREMIUM";
+export type PaymentStatus = "pending" | "approved" | "rejected";
 
 export type PromptCategory =
   | "Anime"
@@ -27,6 +16,17 @@ export type PromptCategory =
   | "Abstract"
   | "Other";
 
+export interface AppUser {
+  uid: string;
+  name: string;
+  email: string;
+  photoURL?: string;
+  role: UserRole;
+  createdAt: Timestamp;
+  premiumUntil?: Timestamp | null;   // ← NEW
+  isPremium?: boolean;               // ← NEW (derived, but stored for easy querying)
+}
+
 export interface Prompt {
   id: string;
   title: string;
@@ -34,19 +34,12 @@ export interface Prompt {
   promptText: string;
   category: PromptCategory;
   isPremium: boolean;
-  createdBy: string; // uid
+  createdBy: string;
   createdByName: string;
   createdAt: Timestamp;
   likesCount: number;
 }
 
-// ─── Like ───────────────────────────────────────────────────────
-export interface Like {
-  userId: string;
-  createdAt: Timestamp;
-}
-
-// ─── Comment ────────────────────────────────────────────────────
 export interface Comment {
   id: string;
   promptId: string;
@@ -55,17 +48,22 @@ export interface Comment {
   userPhotoURL?: string;
   text: string;
   createdAt: Timestamp;
-  likes: number; // comment-level likes
 }
 
-// ─── Share Options ──────────────────────────────────────────────
-export interface ShareOption {
-  label: string;
-  icon: string;
-  url: string;
+// ─── Payment Request ─────────────────────────────────────────
+export interface PaymentRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  status: PaymentStatus;
+  requestedAt: Timestamp;
+  approvedAt?: Timestamp | null;
+  approvedBy?: string | null;
+  premiumUntil?: Timestamp | null;
+  note?: string;
 }
 
-// ─── Auth Store ─────────────────────────────────────────────────
 export interface AuthState {
   user: AppUser | null;
   loading: boolean;
@@ -73,9 +71,8 @@ export interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-// ─── Pagination ─────────────────────────────────────────────────
 export interface PaginationResult<T> {
   data: T[];
-  lastDoc: unknown; // DocumentSnapshot
+  lastDoc: unknown;
   hasMore: boolean;
 }
