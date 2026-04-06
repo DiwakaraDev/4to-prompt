@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginWithEmail, getAuthErrorMessage } from "@/services/auth.service";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { BrandLogo } from "@/components/auth/BrandLogo";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import {
@@ -115,6 +116,15 @@ function LoginForm() {
         />
 
         <div className="p-6">
+
+          <div className="mb-5 flex justify-center">
+            <BrandLogo
+              href="/"
+              showWordmark={false}
+              imageClassName="h-14 w-auto"
+              className="justify-center"
+            />
+          </div>
 
           {/* Header */}
           <div className="text-center mb-5">

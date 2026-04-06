@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { registerWithEmail, getAuthErrorMessage } from "@/services/auth.service";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { BrandLogo } from "@/components/auth/BrandLogo";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import {
@@ -116,7 +117,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="w-full max-w-[440px] animate-fadeInUp">
+    <div className="w-full max-w-110 animate-fadeInUp">
       <div className="glass-strong rounded-3xl overflow-hidden">
 
         {/* Top gradient bar */}
@@ -124,6 +125,15 @@ export default function RegisterPage() {
           style={{ background: "linear-gradient(90deg, var(--color-accent), var(--color-primary), var(--color-secondary))" }} />
 
         <div className="p-6">
+
+          <div className="mb-5 flex justify-center">
+            <BrandLogo
+              href="/"
+              showWordmark={false}
+              imageClassName="h-14 w-auto"
+              className="justify-center"
+            />
+          </div>
 
           {/* Header */}
           <div className="text-center mb-5">
@@ -310,7 +320,7 @@ export default function RegisterPage() {
           <p className="text-center text-sm mt-4" style={{ color: "var(--color-text-muted)" }}>
             Already have an account?{" "}
             <Link href="/login"
-              className="font-semibold transition-colors hover:text-[var(--color-primary-hover)]"
+              className="font-semibold transition-colors hover:text-primary-hover"
               style={{ color: "var(--color-primary)" }}>
               Sign in
             </Link>

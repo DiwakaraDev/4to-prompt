@@ -4,6 +4,7 @@ import type { Viewport } from "next";
 import { Inter, Syne } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AnimatedBackground } from "@/components/layout/AnimatedBackground";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,7 +25,6 @@ export const metadata: Metadata = {
   description: "Discover, copy and share AI image prompts for Midjourney, DALL·E, and Stable Diffusion.",
   keywords:    ["AI prompts", "Midjourney", "DALL·E", "Stable Diffusion", "image generation"],
   manifest:    "/manifest.json",
-  // ✅ themeColor removed — moved to viewport export below
   openGraph: {
     title:       "4to Prompt",
     description: "Discover & copy AI image prompts that actually work.",
@@ -37,7 +37,6 @@ export const metadata: Metadata = {
   },
 };
 
-// ✅ themeColor must live here in Next.js 15+
 export const viewport: Viewport = {
   themeColor: "#bc67ff",
 };
@@ -50,6 +49,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${syne.variable}`}>
+        {/* ✅ Site-wide animated background — renders on every page */}
+        <AnimatedBackground />
+
         <a href="#main-content" className="skip-link">Skip to content</a>
         <AuthProvider>
           {children}

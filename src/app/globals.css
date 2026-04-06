@@ -822,3 +822,212 @@ button { cursor: pointer; background: none; border: none; }
 .empty-state p {
   max-width: 36ch; font-size: var(--text-sm); margin-bottom: var(--space-6);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════════════════════════════════════════ */
+
+@keyframes aurora {
+  0%   { transform: rotate(0deg)   scale(1.0); opacity: 0.55; }
+  25%  { transform: rotate(90deg)  scale(1.08); opacity: 0.65; }
+  50%  { transform: rotate(180deg) scale(1.0); opacity: 0.55; }
+  75%  { transform: rotate(270deg) scale(1.05); opacity: 0.60; }
+  100% { transform: rotate(360deg) scale(1.0); opacity: 0.55; }
+}
+
+@keyframes scanline {
+  0%   { top: -10%;  opacity: 0;   }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 110%;  opacity: 0;   }
+}
+
+@keyframes orbFloat1 {
+  0%,  100% { transform: translate(0px,    0px)    scale(1.00); }
+  25%        { transform: translate(40px,  -30px)  scale(1.05); }
+  50%        { transform: translate(-20px, -50px)  scale(0.97); }
+  75%        { transform: translate(-40px,  20px)  scale(1.03); }
+}
+
+@keyframes orbFloat2 {
+  0%,  100% { transform: translate(0px,    0px)    scale(1.00); }
+  20%        { transform: translate(-35px,  25px)  scale(1.04); }
+  50%        { transform: translate(30px,   40px)  scale(0.96); }
+  80%        { transform: translate(20px,  -20px)  scale(1.02); }
+}
+
+@keyframes orbFloat3 {
+  0%,  100% { transform: translate(0px,   0px)   scale(1.00); }
+  33%        { transform: translate(25px, -35px) scale(1.06); }
+  66%        { transform: translate(-30px, 15px) scale(0.95); }
+}
+
+/* ── Wrapper ── */
+.animated-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: #0d0f1a;  /* matches --color-bg */
+  pointer-events: none;
+}
+
+/* ── Dot grid ── */
+.animated-bg-grid {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 80% 80% at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, black 30%, transparent 75%);
+}
+
+/* ── Aurora ring ── */
+.animated-bg-aurora {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140vmax;
+  height: 140vmax;
+  margin-top: -70vmax;
+  margin-left: -70vmax;
+  background: conic-gradient(
+    from 0deg,
+    transparent           0deg,
+    rgba(188,103,255,0.04) 40deg,
+    rgba(0,242,255,0.06)   80deg,
+    rgba(188,103,255,0.05) 120deg,
+    transparent            160deg,
+    rgba(255,0,212,0.03)   200deg,
+    rgba(0,242,255,0.04)   240deg,
+    transparent            280deg,
+    rgba(188,103,255,0.04) 320deg,
+    transparent            360deg
+  );
+  animation: aurora 40s linear infinite;
+  border-radius: 50%;
+}
+
+/* ── Orbs ── */
+.animated-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Violet — top left, large hero orb */
+.orb-violet-main {
+  width: min(900px, 90vw);
+  height: min(900px, 90vw);
+  top: -25%;
+  left: -15%;
+  background: radial-gradient(
+    circle at center,
+    rgba(188, 103, 255, 0.16) 0%,
+    rgba(188, 103, 255, 0.07) 40%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  animation: orbFloat1 28s ease-in-out infinite;
+}
+
+/* Cyan — top right */
+.orb-cyan-main {
+  width: min(700px, 75vw);
+  height: min(700px, 75vw);
+  top: -20%;
+  right: -10%;
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 242, 255, 0.13) 0%,
+    rgba(0, 242, 255, 0.05) 45%,
+    transparent 70%
+  );
+  filter: blur(70px);
+  animation: orbFloat2 34s ease-in-out infinite;
+}
+
+/* Magenta — bottom center, subtle accent */
+.orb-magenta {
+  width: min(600px, 65vw);
+  height: min(600px, 65vw);
+  bottom: -10%;
+  left: 35%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 212, 0.09) 0%,
+    rgba(255, 0, 212, 0.03) 45%,
+    transparent 70%
+  );
+  filter: blur(80px);
+  animation: orbFloat3 38s ease-in-out infinite reverse;
+}
+
+/* Violet soft — bottom left */
+.orb-violet-soft {
+  width: min(500px, 55vw);
+  height: min(500px, 55vw);
+  bottom: -5%;
+  left: -5%;
+  background: radial-gradient(
+    circle at center,
+    rgba(124, 58, 245, 0.10) 0%,
+    rgba(124, 58, 245, 0.03) 50%,
+    transparent 70%
+  );
+  filter: blur(70px);
+  animation: orbFloat2 24s ease-in-out infinite reverse;
+}
+
+/* Cyan soft — mid right */
+.orb-cyan-soft {
+  width: min(400px, 45vw);
+  height: min(400px, 45vw);
+  top: 45%;
+  right: -8%;
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 200, 255, 0.07) 0%,
+    transparent 65%
+  );
+  filter: blur(60px);
+  animation: orbFloat1 32s ease-in-out infinite 8s;
+}
+
+/* ── Scanline sweep — very subtle, adds depth ── */
+.animated-bg-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(188, 103, 255, 0.12) 20%,
+    rgba(0, 242, 255, 0.18)   50%,
+    rgba(188, 103, 255, 0.12) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.08);
+  animation: scanline 12s linear infinite;
+}
+
+/* ── Performance ── */
+.animated-bg-orb,
+.animated-bg-aurora,
+.animated-bg-scanline {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animated-bg-orb,
+  .animated-bg-aurora,
+  .animated-bg-scanline {
+    animation: none !important;
+  }
+}

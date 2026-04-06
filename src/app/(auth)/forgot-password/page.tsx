@@ -6,6 +6,7 @@ import Link from "next/link";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/firebase/config";
 import { getAuthErrorMessage } from "@/services/auth.service";
+import { BrandLogo } from "@/components/auth/BrandLogo";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import {
@@ -45,7 +46,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="w-full max-w-[420px] animate-fadeInUp">
+    <div className="w-full max-w-105 animate-fadeInUp">
       <div className="glass-strong rounded-3xl overflow-hidden">
 
         {/* Top gradient bar */}
@@ -55,6 +56,15 @@ export default function ForgotPasswordPage() {
         />
 
         <div className="p-6">
+
+          <div className="mb-5 flex justify-center">
+            <BrandLogo
+              href="/"
+              showWordmark={false}
+              imageClassName="h-14 w-auto"
+              className="justify-center"
+            />
+          </div>
 
           {/* Header */}
           <div className="text-center mb-5">
@@ -94,7 +104,7 @@ export default function ForgotPasswordPage() {
                   Didn&apos;t receive it?{" "}
                   <button
                     onClick={() => { setSent(false); setError(null); }}
-                    className="font-semibold transition-colors hover:text-[var(--color-primary-hover)]"
+                    className="font-semibold transition-colors hover:text-primary-hover"
                     style={{ color: "var(--color-primary)" }}
                   >
                     Try again
@@ -177,7 +187,7 @@ export default function ForgotPasswordPage() {
             <Link
               href="/login"
               className="inline-flex items-center gap-1.5 font-semibold transition-colors
-                         hover:text-[var(--color-primary-hover)]"
+                         hover:text-primary-hover"
               style={{ color: "var(--color-primary)" }}
             >
               <RiArrowLeftLine size={14} />
