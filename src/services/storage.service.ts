@@ -1,6 +1,10 @@
 // src/services/storage.service.ts
 // ✅ Cloudinary only — NO firebase/storage imports
 
+// ─────────────────────────────────────────────────────────────
+// Upload
+// ─────────────────────────────────────────────────────────────
+
 export async function uploadPromptImage(
   file: File,
   onProgress?: (pct: number) => void,
@@ -58,17 +62,30 @@ export async function uploadPromptImage(
   });
 }
 
-export async function deleteStorageFile(_imageUrl: string): Promise<void> {
-  // TODO: Implement server-side deletion via Cloudinary Admin API.
-  // Requires: POST /api/admin/delete-image → cloudinary.uploader.destroy(publicId)
-  // using CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET (server-only env vars).
-  // Images currently remain in Cloudinary storage after prompt deletion.
-  if (process.env.NODE_ENV === "development") {
-    console.warn(
-      "[storage.service] deleteStorageFile() is a no-op.\n" +
-      "Image was NOT deleted from Cloudinary:\n" +
-      _imageUrl + "\n" +
-      "Implement server-side signing via Cloudinary Admin API to enable deletion."
-    );
+// ─────────────────────────────────────────────────────────────
+// Delete — calls server-side route to sign the Cloudinary request
+// ─────────────────────────────────────────────────────────────
+
+export async function deleteStorageFile(imageUrl: string): Promise<void> {
+  if (!imageUrl) return;
+
+  try {
+    const res = await fetch("/api/admin/delete-image", {
+      method:  "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ imageUrl }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.error(
+        "[storage.service] Cloudinary deletion failed:",
+        body?.error ?? `HTTP ${res.status}`,
+      );
+    }
+  } catch (err) {
+    // Non-fatal — Firestore doc is already deleted.
+    // Image becomes orphaned in Cloudinary but causes no runtime issues.
+    console.error("[storage.service] Failed to reach delete-image API:", err);
   }
 }

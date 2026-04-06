@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/store/auth.store";
 import { updateUserPhotoURL } from "@/services/auth.service";
+import { deleteStorageFile } from "@/services/storage.service";
 import toast from "react-hot-toast";
 
 interface CloudinaryResult {
@@ -30,19 +31,18 @@ const SIZE_MAP = {
 };
 
 // Extend the incomplete upstream type to include `transformation`
-// which is a valid Cloudinary Upload Widget option omitted from @types
 type WidgetOptions = CloudinaryUploadWidgetOptions & {
   transformation?: Array<Record<string, unknown>>;
 };
 
 const UPLOAD_OPTIONS: WidgetOptions = {
-  maxFiles:              1,
-  resourceType:          "image",
-  cropping:              true,
-  croppingAspectRatio:   1,
+  maxFiles:               1,
+  resourceType:           "image",
+  cropping:               true,
+  croppingAspectRatio:    1,
   croppingShowDimensions: true,
-  folder:                "4to-prompt/avatars",
-  sources:               ["local", "camera"],
+  folder:                 "4to-prompt/avatars",
+  sources:                ["local", "camera"],
   transformation: [
     { width: 400, height: 400, crop: "fill", gravity: "face" },
     { quality: "auto", fetch_format: "auto" },
@@ -66,6 +66,13 @@ const UPLOAD_OPTIONS: WidgetOptions = {
   },
 };
 
+// ─── Only delete Cloudinary-hosted images ────────────────────────────────────
+// Google/Facebook/GitHub avatars must never be sent to our delete API
+function isCloudinaryUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return url.includes("res.cloudinary.com");
+}
+
 export function ProfileImageUpload({
   size      = "md",
   showLabel = true,
@@ -79,10 +86,21 @@ export function ProfileImageUpload({
     async (result: CloudinaryResult) => {
       if (!user) return;
       setUploading(true);
+
+      // Capture old URL before overwriting — needed for deletion
+      const previousPhotoURL = user.photoURL ?? null;
+
       try {
+        // 1. Save new URL to Firestore + local store
         await updateUserPhotoURL(user.uid, result.secure_url);
         setUser({ ...user, photoURL: result.secure_url });
         toast.success("Profile photo updated!");
+
+        // 2. Delete old image from Cloudinary (only if it was Cloudinary-hosted)
+        //    Run after UI update so user sees the new photo immediately
+        if (isCloudinaryUrl(previousPhotoURL)) {
+          await deleteStorageFile(previousPhotoURL!);
+        }
       } catch {
         toast.error("Failed to save photo. Try again.");
       } finally {
