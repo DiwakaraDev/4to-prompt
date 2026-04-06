@@ -22,10 +22,10 @@ export function CommentSection({ promptId }: CommentSectionProps) {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [input, setInput] = useState("");
+  const [comments,   setComments]   = useState<Comment[]>([]);
+  const [input,      setInput]      = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading,    setLoading]    = useState(true);
 
   useEffect(() => {
     if (!promptId) return;
@@ -39,7 +39,7 @@ export function CommentSection({ promptId }: CommentSectionProps) {
       () => {
         setLoading(false);
         toast.error("Failed to load comments");
-      }
+      },
     );
 
     return () => unsub();
@@ -47,6 +47,8 @@ export function CommentSection({ promptId }: CommentSectionProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // ✅ Auth check lives here only — not duplicated on the form's onClick
     if (!user) {
       toast.error("Sign in to comment");
       router.push("/login");
@@ -59,10 +61,10 @@ export function CommentSection({ promptId }: CommentSectionProps) {
     try {
       await postComment({
         promptId,
-        userId: user.uid,
-        userName: user.name,
+        userId:       user.uid,
+        userName:     user.name,
         userPhotoURL: user.photoURL,
-        text: input.trim(),
+        text:         input.trim(),
       });
       setInput("");
     } catch {
@@ -102,15 +104,11 @@ export function CommentSection({ promptId }: CommentSectionProps) {
         Comments ({comments.length})
       </div>
 
-      {/* input */}
+      {/* ── Comment input form ──────────────────────────────────
+          ❌ Removed: onClick on <form> that redirected on every click
+          ✅ handleSubmit already handles the unauthenticated case     */}
       <form
         onSubmit={handleSubmit}
-        onClick={() => {
-          if (!user) {
-            toast.error("Sign in to comment");
-            router.push("/login");
-          }
-        }}
         className="flex items-center gap-2"
       >
         <input
@@ -125,7 +123,7 @@ export function CommentSection({ promptId }: CommentSectionProps) {
             "flex-1 rounded-xl px-3 py-2.5 text-xs bg-[rgba(8,10,18,0.9)]",
             "border border-white/10 outline-none",
             "placeholder:text-text-faint",
-            "focus:border-primary"
+            "focus:border-primary",
           )}
           style={{ color: "var(--color-text)" }}
         />
@@ -136,14 +134,14 @@ export function CommentSection({ promptId }: CommentSectionProps) {
             "inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-xs font-semibold",
             "border border-[rgba(188,103,255,0.35)] bg-primary-muted",
             "text-primary transition-opacity",
-            (!user || submitting || !input.trim()) && "opacity-50 cursor-not-allowed"
+            (!user || submitting || !input.trim()) && "opacity-50 cursor-not-allowed",
           )}
         >
           <RiSendPlane2Line size={14} />
         </button>
       </form>
 
-      {/* list */}
+      {/* ── Comment list ─────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         {loading ? (
           <>
@@ -180,14 +178,14 @@ export function CommentSection({ promptId }: CommentSectionProps) {
             return (
               <div
                 key={c.id}
-                className="flex items-start gap-3 rounded-xl bg-white/2 px-3 py-2.5"
+                className="flex items-start gap-3 rounded-xl px-3 py-2.5"
                 style={{ background: "rgba(8,10,18,0.75)" }}
               >
                 <div
                   className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
                   style={{
                     background: "rgba(188,103,255,0.16)",
-                    color: "var(--color-primary)",
+                    color:      "var(--color-primary)",
                   }}
                 >
                   {c.userName?.[0]?.toUpperCase() ?? "U"}
@@ -205,6 +203,7 @@ export function CommentSection({ promptId }: CommentSectionProps) {
                         type="button"
                         onClick={() => handleDelete(c)}
                         className="text-[10px] text-text-faint hover:text-red-400"
+                        aria-label="Delete comment"
                       >
                         <RiDeleteBin6Line size={12} />
                       </button>

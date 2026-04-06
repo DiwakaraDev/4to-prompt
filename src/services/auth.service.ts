@@ -18,13 +18,16 @@ import {
 import { auth, db } from "@/firebase/config";
 import type { AppUser } from "@/types";
 
+
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
+
 
 // ─── Login ────────────────────────────────────────────────────
 export async function loginWithEmail(email: string, password: string) {
   return signInWithEmailAndPassword(auth, email, password);
 }
+
 
 // ─── Register ─────────────────────────────────────────────────
 export async function registerWithEmail(
@@ -47,6 +50,7 @@ export async function registerWithEmail(
   return cred;
 }
 
+
 // ─── Google OAuth ──────────────────────────────────────────────
 export async function loginWithGoogle() {
   const cred = await signInWithPopup(auth, googleProvider);
@@ -67,16 +71,19 @@ export async function loginWithGoogle() {
   return cred;
 }
 
+
 // ─── Logout ───────────────────────────────────────────────────
 export async function logout() {
   await signOut(auth);
 }
+
 
 // ─── Fetch user doc ───────────────────────────────────────────
 export async function fetchUserDocument(uid: string): Promise<AppUser | null> {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? (snap.data() as AppUser) : null;
 }
+
 
 // ─── Update profile photo ─────────────────────────────────────
 // Saves Cloudinary URL to both Firestore + Firebase Auth profile.
@@ -94,6 +101,7 @@ export async function updateUserPhotoURL(
   }
 }
 
+
 // ─── Update display name ──────────────────────────────────────
 // Saves updated name to both Firestore + Firebase Auth profile.
 export async function updateUserName(
@@ -107,16 +115,18 @@ export async function updateUserName(
   }
 }
 
+
 // ─── Auth cookie (used by middleware) ─────────────────────────
-export function setAuthCookie(token: string | null) {
-  if (token) {
-    document.cookie = `4to-auth-token=${token}; path=/; max-age=${
-      60 * 60 * 24 * 7
-    }; SameSite=Lax`;
-  } else {
-    document.cookie = "4to-auth-token=; path=/; max-age=0";
-  }
+// Sets cookie via server-side API route so it gets HttpOnly + Secure
+// flags — not accessible to client-side JS (XSS safe).
+export async function setAuthCookie(token: string | null): Promise<void> {
+  await fetch("/api/auth/set-cookie", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ token }),
+  });
 }
+
 
 // ─── Friendly error messages ──────────────────────────────────
 export function getAuthErrorMessage(error: AuthError): string {

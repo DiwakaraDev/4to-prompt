@@ -161,7 +161,13 @@ body::after {
 img, picture, video, canvas, svg { display: block; max-width: 100%; height: auto; }
 input, button, textarea, select { font: inherit; color: inherit; }
 h1, h2, h3, h4, h5, h6 { text-wrap: balance; line-height: 1.1; font-family: var(--font-display); }
-p, li, figcaption { text-wrap: pretty; max-width: 72ch; }
+/* ✅ AFTER */
+p, li, figcaption { text-wrap: pretty; }
+
+/* Apply reading width only in explicit prose contexts */
+.prose p,
+.prose li,
+.prose figcaption { max-width: 72ch; }
 
 ::selection {
   background: rgba(188,103,255,0.28);

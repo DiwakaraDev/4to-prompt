@@ -1,4 +1,4 @@
-// src/app/(main)/page.tsx  (or src/app/page.tsx if no route group)
+// src/app/(main)/page.tsx
 "use client";
 
 import dynamic from "next/dynamic";
@@ -27,11 +27,11 @@ const CATEGORIES: Array<PromptCategory | "All"> = [
 
 export default function HomePage() {
 
-  const [activeTab,     setActiveTab]     = useState<"all" | "free" | "premium">("all");
+  const [activeTab,      setActiveTab]      = useState<"all" | "free" | "premium">("all");
   const [activeCategory, setActiveCategory] = useState<PromptCategory | "All">("All");
-  const [searchQuery,   setSearchQuery]   = useState("");
-  const [searchResults, setSearchResults] = useState<Prompt[] | null>(null);
-  const [searching,     setSearching]     = useState(false);
+  const [searchQuery,    setSearchQuery]    = useState("");
+  const [searchResults,  setSearchResults]  = useState<Prompt[] | null>(null);
+  const [searching,      setSearching]      = useState(false);
 
   // Infinite scroll sentinel
   const { ref: sentinelRef, inView } = useInView({ threshold: 0.1 });
@@ -40,33 +40,30 @@ export default function HomePage() {
     activeTab === "free"    ? false :
     activeTab === "premium" ? true  : undefined;
 
-  const { prompts, loading, hasMore, initiated, loadInitial, loadMore, reset } = usePrompts({
+  // ── `initiated` removed — no longer needed here ─────────────
+  const { prompts, loading, hasMore, loadInitial, loadMore, reset } = usePrompts({
     filterPremium,
     category: activeCategory,
   });
 
-  // Initial load
-  useEffect(() => {
-    loadInitial();
-  }, [loadInitial]);
-
-  // Reset when filters change
+  // ── Single effect: handles mount + filter changes ────────────
+  // reset() clears stale data synchronously, then loadInitial()
+  // fetches with the correct new options already baked into the
+  // useCallback reference — no double-fetch possible.
   useEffect(() => {
     reset();
-  }, [activeTab, activeCategory, reset]);
+    loadInitial();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, activeCategory]);
 
-  useEffect(() => {
-    if (!initiated) loadInitial();
-  }, [initiated, loadInitial]);
-
-  // Infinite scroll trigger
+  // ── Infinite scroll trigger ──────────────────────────────────
   useEffect(() => {
     if (inView && hasMore && !loading && !searchResults) {
       loadMore();
     }
   }, [inView, hasMore, loading, searchResults, loadMore]);
 
-  // Debounced search
+  // ── Debounced search ─────────────────────────────────────────
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults(null);
@@ -118,10 +115,12 @@ export default function HomePage() {
                 aria-label="Search prompts"
               />
               {searchQuery && (
-                <button onClick={() => { setSearchQuery(""); setSearchResults(null); }}
+                <button
+                  onClick={() => { setSearchQuery(""); setSearchResults(null); }}
                   className="absolute right-4 top-1/2 -translate-y-1/2"
                   style={{ color: "var(--color-text-faint)" }}
-                  aria-label="Clear search">
+                  aria-label="Clear search"
+                >
                   <RiCloseLine size={16} />
                 </button>
               )}
@@ -131,8 +130,10 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center gap-3">
 
               {/* FREE / PREMIUM tabs */}
-              <div className="flex items-center gap-1 p-1 rounded-xl"
-                style={{ background: "var(--color-surface-2)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div
+                className="flex items-center gap-1 p-1 rounded-xl"
+                style={{ background: "var(--color-surface-2)", border: "1px solid rgba(255,255,255,0.06)" }}
+              >
                 {(["all", "free", "premium"] as const).map((tab) => (
                   <button
                     key={tab}
@@ -152,8 +153,8 @@ export default function HomePage() {
                     } : undefined}
                   >
                     {tab === "premium" && <RiVipCrownLine size={12} />}
-                    {tab === "all" && <RiImageLine size={12} />}
-                    {tab === "free" && "✓ "}
+                    {tab === "all"     && <RiImageLine size={12} />}
+                    {tab === "free"    && "✓ "}
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
                   </button>
                 ))}
@@ -172,13 +173,13 @@ export default function HomePage() {
                         : "hover:text-white"
                     )}
                     style={activeCategory === cat ? {
-                      background:   "var(--color-primary-muted)",
-                      border:       "1px solid rgba(188,103,255,0.35)",
-                      color:        "var(--color-primary)",
+                      background: "var(--color-primary-muted)",
+                      border:     "1px solid rgba(188,103,255,0.35)",
+                      color:      "var(--color-primary)",
                     } : {
-                      background:   "var(--color-surface-2)",
-                      border:       "1px solid rgba(255,255,255,0.07)",
-                      color:        "var(--color-text-muted)",
+                      background: "var(--color-surface-2)",
+                      border:     "1px solid rgba(255,255,255,0.07)",
+                      color:      "var(--color-text-muted)",
                     }}
                   >
                     {cat}
@@ -215,8 +216,10 @@ export default function HomePage() {
           {/* Empty state */}
           {!isLoading && displayPrompts.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-center animate-fadeIn">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                style={{ background: "var(--color-surface-2)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: "var(--color-surface-2)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
                 <RiImageLine size={26} style={{ color: "var(--color-text-faint)" }} />
               </div>
               <h3 className="text-base font-semibold mb-2" style={{ color: "var(--color-text)" }}>
@@ -237,11 +240,14 @@ export default function HomePage() {
 
           {/* End of list */}
           {!hasMore && displayPrompts.length > 0 && !searchResults && (
-            <p className="text-center text-xs mt-8 animate-fadeIn"
-              style={{ color: "var(--color-text-faint)" }}>
+            <p
+              className="text-center text-xs mt-8 animate-fadeIn"
+              style={{ color: "var(--color-text-faint)" }}
+            >
               You&apos;ve seen all prompts ✦
             </p>
           )}
+
         </div>
       </section>
     </>

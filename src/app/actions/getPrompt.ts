@@ -1,21 +1,22 @@
+// src/app/actions/getPrompt.ts  ← FULL FILE, replace entirely
 "use server";
 
 import { cookies } from "next/headers";
+import { Timestamp } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/firebase/admin";
 import type { Prompt, AppUser } from "@/types";
 
 // ── Converts Admin Firestore Timestamp → plain { seconds, nanoseconds }
 //    so Next.js can serialize it across the server → client boundary.
+//    Uses the public Timestamp API — never private ._seconds fields.
 function serializePrompt(data: Record<string, unknown>, id: string): Prompt {
+  const ts = data.createdAt;
+
   return {
     ...data,
     id,
-    createdAt: data.createdAt
-      ? {
-          seconds: (data.createdAt as { _seconds: number })._seconds,
-          nanoseconds: (data.createdAt as { _nanoseconds: number })
-            ._nanoseconds,
-        }
+    createdAt: ts instanceof Timestamp
+      ? { seconds: ts.seconds, nanoseconds: ts.nanoseconds }
       : null,
   } as unknown as Prompt;
 }
@@ -27,7 +28,7 @@ export async function getPromptSecure(
   const promptDoc = await adminDb.collection("prompts").doc(promptId).get();
   if (!promptDoc.exists) return null;
 
-  const raw = promptDoc.data() as Record<string, unknown>;
+  const raw    = promptDoc.data() as Record<string, unknown>;
   const prompt = serializePrompt(raw, promptDoc.id);
 
   // ── 2. Free prompt — no gate needed ─────────────────────────
@@ -42,7 +43,7 @@ export async function getPromptSecure(
   }
 
   try {
-    const decoded = await adminAuth.verifyIdToken(token);
+    const decoded  = await adminAuth.verifyIdToken(token);
     const userSnap = await adminDb.collection("users").doc(decoded.uid).get();
 
     if (!userSnap.exists) {
@@ -53,13 +54,13 @@ export async function getPromptSecure(
 
     const isAdmin = userData.role === "admin";
 
-    const isPremiumActive = userData.premiumUntil
-      ? (userData.premiumUntil as { seconds: number }).seconds * 1000 >
-        Date.now()
+    // ✅ instanceof Timestamp guard — safe, public API, no type cast hack
+    const isPremiumActive = userData.premiumUntil instanceof Timestamp
+      ? userData.premiumUntil.seconds * 1000 > Date.now()
       : false;
 
     if (isAdmin || isPremiumActive) {
-      return prompt; // ✅ Full access
+      return prompt;
     }
   } catch {
     // Token expired, revoked, or tampered

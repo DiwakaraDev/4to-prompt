@@ -1,5 +1,14 @@
+// next.config.ts
 import type { NextConfig } from "next";
 import path from "path";
+
+// Shared alias map — used by both Turbopack and webpack
+// so the empty stub is applied consistently in all build modes.
+const firebaseStorageAliases = {
+  "firebase/storage":         path.resolve("./src/lib/empty-module.ts"),
+  "@firebase/storage":        path.resolve("./src/lib/empty-module.ts"),
+  "@firebase/storage-compat": path.resolve("./src/lib/empty-module.ts"),
+};
 
 const nextConfig: NextConfig = {
   // ── Server-only packages — never bundle into client chunks ──
@@ -9,13 +18,21 @@ const nextConfig: NextConfig = {
     "@opentelemetry/api",
   ],
 
-  // ── Tell Turbopack to replace firebase/storage with empty stub ──
+  // ── Turbopack alias (next dev --turbo) ───────────────────────
   turbopack: {
-    resolveAlias: {
-      "firebase/storage":         path.resolve("./src/lib/empty-module.ts"),
-      "@firebase/storage":        path.resolve("./src/lib/empty-module.ts"),
-      "@firebase/storage-compat": path.resolve("./src/lib/empty-module.ts"),
-    },
+    resolveAlias: firebaseStorageAliases,
+  },
+
+  // ── Webpack alias (next build + next dev without --turbo) ────
+  // Mirrors the Turbopack config so both build pipelines stub out
+  // firebase/storage identically — prevents bundling errors in CI
+  // and production builds which always use webpack.
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      ...firebaseStorageAliases,
+    };
+    return config;
   },
 
   compiler: {

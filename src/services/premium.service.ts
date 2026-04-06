@@ -63,11 +63,13 @@ export async function submitPaymentRequest(
   userName:  string,
   userEmail: string,
 ): Promise<string> {
-  // Prevent duplicate pending requests
+  // Block duplicate submissions only for active states (pending/approved).
+  // Rejected users are allowed to resubmit — their previous request is
+  // considered closed, so a new one should go through.
   const q = query(
     collection(db, PAYMENT_COL),
-    where("userId",  "==", userId),
-    where("status",  "==", "pending"),
+    where("userId", "==", userId),
+    where("status", "in", ["pending", "approved"]),  // ✅ was: "==", "pending"
   );
   const existing = await getDocs(q);
   if (!existing.empty) return existing.docs[0].id;

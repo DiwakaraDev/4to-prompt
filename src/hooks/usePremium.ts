@@ -6,10 +6,11 @@ import { useAuthStore } from "@/store/auth.store";
 import { premiumExpiryLabel } from "@/services/premium.service";
 import type { FirebaseTimestamp } from "@/types";
 
-// ─── Local helper ────────────────────────────────────────────────────────────
-// Accepts both Firestore Timestamp (has .toMillis()) and plain serialized
-// { seconds, nanoseconds } — the latter arrives after server/client boundary
-// crossing where Timestamp methods are stripped by JSON serialization.
+// ─── Local helper ─────────────────────────────────────────────
+// Accepts both Firestore Timestamp (has .toMillis()) and plain
+// serialized { seconds, nanoseconds } — the latter arrives after
+// server/client boundary crossing where Timestamp methods are
+// stripped by JSON serialization.
 function resolvePremiumActive(
   premiumUntil: FirebaseTimestamp | null | undefined,
 ): boolean {
@@ -28,7 +29,7 @@ function resolvePremiumActive(
   return false;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────
 export function usePremium() {
   const user = useAuthStore((s) => s.user);
 
@@ -38,7 +39,9 @@ export function usePremium() {
   );
 
   const expiryLabel = useMemo(
-    () => premiumExpiryLabel(user?.premiumUntil as never),
+    // ✅ premiumExpiryLabel already accepts FirebaseTimestamp | null | undefined
+    // — no cast needed. ?? null collapses undefined → null for a clean call.
+    () => premiumExpiryLabel(user?.premiumUntil ?? null),
     [user?.premiumUntil],
   );
 

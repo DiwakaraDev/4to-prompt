@@ -15,11 +15,11 @@ export function useAuthListener() {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const token = await firebaseUser.getIdToken();
-        setAuthCookie(token);
+        await setAuthCookie(token);                          // ← was: setAuthCookie(token)
         const appUser = await fetchUserDocument(firebaseUser.uid);
         setUser(appUser);
       } else {
-        setAuthCookie(null);
+        await setAuthCookie(null);                           // ← was: setAuthCookie(null)
         setUser(null);
       }
       setLoading(false);
