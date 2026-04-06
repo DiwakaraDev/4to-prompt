@@ -1,25 +1,34 @@
 // src/components/layout/AnimatedBackground.tsx
-// Server Component — pure CSS, zero JS, zero runtime cost
-
 export function AnimatedBackground() {
   return (
-    <div className="animated-bg" aria-hidden="true">
+    <div className="abg" aria-hidden="true">
+      {/* Morphing mesh gradient — CSS @property animated */}
+      <div className="abg-mesh" />
 
-      {/* Dot grid */}
-      <div className="animated-bg-grid" />
+      {/* Dot particle field */}
+      <div className="abg-dots" />
 
-      {/* Aurora ring — slowly rotates behind everything */}
-      <div className="animated-bg-aurora" />
+      {/* Tron perspective grid — bottom horizon */}
+      <div className="abg-grid" />
 
       {/* Floating orbs */}
-      <div className="animated-bg-orb orb-violet-main" />
-      <div className="animated-bg-orb orb-cyan-main"   />
-      <div className="animated-bg-orb orb-magenta"     />
-      <div className="animated-bg-orb orb-violet-soft" />
-      <div className="animated-bg-orb orb-cyan-soft"   />
+      <div className="abg-orb abg-orb-1" />
+      <div className="abg-orb abg-orb-2" />
+      <div className="abg-orb abg-orb-3" />
 
-      {/* Horizontal scan line — subtle sweep */}
-      <div className="animated-bg-scanline" />
+      {/* Sweeping light beams */}
+      <div className="abg-beam abg-beam-1" />
+      <div className="abg-beam abg-beam-2" />
+
+      {/* Pulse rings — ripple from center */}
+      <div className="abg-rings">
+        <div className="abg-ring abg-ring-1" />
+        <div className="abg-ring abg-ring-2" />
+        <div className="abg-ring abg-ring-3" />
+      </div>
+
+      {/* Edge vignette — keeps content readable */}
+      <div className="abg-vignette" />
     </div>
   );
 }
