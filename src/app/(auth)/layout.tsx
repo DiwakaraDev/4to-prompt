@@ -13,10 +13,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="min-h-dvh flex flex-col"
-      style={{ background: "var(--color-bg)" }}
-    >
+    <div className="min-h-dvh flex flex-col">
       {/* Ambient mesh */}
       <div
         aria-hidden="true">

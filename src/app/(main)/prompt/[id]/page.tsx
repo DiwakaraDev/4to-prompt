@@ -518,7 +518,7 @@ export default function PromptDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh" style={{ background: "var(--color-bg)", paddingBottom: "var(--space-16)" }}>
+    <div className="min-h-dvh" style={{ paddingBottom: "var(--space-16)" }}>
       {showUnlockModal && <PremiumLockModal onClose={handleUnlockModalClose} />}
 
       <div

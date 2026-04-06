@@ -4,10 +4,7 @@ import { RiGhostLine, RiArrowLeftLine } from "react-icons/ri";
 
 export default function NotFound() {
   return (
-    <div
-      className="min-h-dvh flex flex-col items-center justify-center px-4 text-center"
-      style={{ background: "var(--color-bg)" }}
-    >
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4 text-center">
       {/* Ambient */}
       <div aria-hidden="true" className="absolute inset-0 -z-10" style={{
         background: `
