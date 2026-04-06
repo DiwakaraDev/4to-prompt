@@ -131,7 +131,7 @@ export function Navbar() {
             {loading ? (
               <div className="skeleton w-28 h-9 rounded-xl" />
             ) : user ? (
-              <div ref={profileRef} className="relative">
+              <div ref={profileRef} className="relative hidden md:block">
                 <button
                   onClick={() => setProfileOpen(p => !p)}
                   aria-label="Profile menu"
@@ -316,7 +316,10 @@ export function Navbar() {
             <button
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
-              onClick={() => setMobileOpen(o => !o)}
+              onClick={() => {
+                setProfileOpen(false);
+                setMobileOpen(o => !o);
+              }}
               className="md:hidden navbar-hamburger w-9 h-9 rounded-xl flex items-center
                          justify-center transition-all duration-200"
             >
